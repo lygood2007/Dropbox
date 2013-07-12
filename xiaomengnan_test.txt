@@ -1,7 +1,2 @@
-<<<<<<< HEAD
-﻿﻿萝卜白菜，各有所爱
-aaaabbbbb
-=======
 ﻿萝卜白菜，各有所爱
 aaaabbbbb
->>>>>>> 67c604d348fd0b32eaa21dc508a2c138e72be280
