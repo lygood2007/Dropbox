@@ -1,0 +1,43 @@
+1. Client Design:
+In client side, there are two hash tables. One records all of the file in the Dropbox Directory in the last synchroization, the other keeps the file in the current synchroization.
+For every synchronization, client compares these two hash tables to get the file to be deleted, added and updated. For deleted file operation, client only needs to send the relative file path, and then server will delete it. For newly created/updated file, client will send the file path and the content to the server.
+
+The communication protocol is like this:
+fileNumber (4 bytes) -- the header of this protocol, tell the server how many file needed to be synchronized
+file Operation(1 byte) -- delete, create or update, if the operation is create or update, the rest part of protocol is like this:
+the length of file path(4 bytes) -- tell the server how many bytes to be read in the stream to get the file path
+file path
+file last modified time (8 bytes)
+isDir  (1 byte) tell the server the file is directory or file
+file size (8 bytes) tell the server how many bytes to be read in the stream to get the file content
+file content
+
+if the operation is deleted, the rest part of protocol is like this:
+the length of file path(4 bytes) -- tell the server how many bytes to be read in the stream to get the file path
+file path
+
+
+so for example, if one file called "deleteme" is deleted, one file called "createme.cpp" is created, and one file called "updateme.cpp" is modified, the protocol is:
+
+fileNumber: 3  	-- how many file needed to be synchronized
+DELETE(1 byte)  -- delete, create or update
+8               -- the length of file path
+deleteme        -- file name
+CREATE(1 byte)  -- delete, create or update
+13              -- the length of file path
+createme.cpp     -- file name
+12:30, 2011/1/1/ -- last modified time
+FALSE            -- is Dir?
+10               -- file size
+123456           -- the content of the file
+UPDATE(1 byte)  -- delete, create or update
+13              -- the length of file path
+updateme.cpp     -- file name
+12:30, 2012/1/1/ -- last modified time
+FALSE            -- is Dir?
+10               -- file size
+123456           -- the content of the file
+
+
+2. Server Design:
+Server keep listening to the client, and once receives the input stream, it deserilize the stream and do the corresponding thing.

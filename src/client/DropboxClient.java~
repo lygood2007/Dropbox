@@ -1,0 +1,73 @@
+package client;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import common.DropboxConstants;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Class: DropboxClient
+ * Description: synchronizes all of the files & dirs change in the syncDirectory to the remote server whose IP is specified by the argument
+ * Example: Java client/DropboxClient 192.161.3.57
+ */
+public class DropboxClient implements FileSynchronizationClient, Runnable {
+    private String syncDirectory; //DropboxConstants.DROPBOX_DIRECTORY;
+    private String serverHost;
+    private int serverPort;
+    private DataOutputStream os;
+    private Socket socket;
+
+
+    private class FileOperation {
+        public byte operation;
+        public File file;
+
+        public FileOperation(byte operation, File file) {
+            this.operation = operation;
+            this.file = file;
+        }
+    }
+
+    private class FileStructure {
+        public File file;
+        public long lastModifiedTime;
+
+        public FileStructure(File file, long lastModifiedTime) {
+            this.file = file;
+            this.lastModifiedTime = lastModifiedTime;
+        }
+    }
+    
+    public DropboxClient(String host) {
+        this.serverHost = host;
+        
+        // replace it with the directory you need to synchronize
+        this.syncDirectory = DropboxConstants.DROPBOX_DIRECTORY; 
+        this.serverPort = DropboxConstants.SERVER_PORT;
+    }
+
+    public void run() {
+    }
+
+    public void startConnection(String serverHost, int serverPort) {
+    }
+
+    public void endConnection() {
+    }
+    
+    public boolean sync() {
+        return true;
+    }
+
+    public static void main(String[] args) {
+    }
+}
