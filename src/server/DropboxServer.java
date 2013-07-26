@@ -3,19 +3,16 @@ package server;
 import common.DropboxConstants;
 
 /**
+ * Package: csci1310.server
  * Class: DropboxServer
- * Description: Receives file stream, parses the stream and synchronizes it to the disk
+ * Description:
  */
-
 public class DropboxServer implements FileSynchronizationServer {
 
-	public void listen() {
-
+    @Override
+    public void listen() {
     }
 
     public static void main(String[] args) {
-    	DropboxServer server = new DropboxServer();
-    	System.out.println("Server started..");
-    	server.listen();
     }
 }
