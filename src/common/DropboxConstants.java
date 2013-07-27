@@ -6,11 +6,11 @@ package common;
  * Description: Contains constants for the whole Dropbox project
  */
 public interface DropboxConstants {
-    int SERVER_PORT = 8945;
+    final static int SERVER_PORT = 5000;
 
-    int SYNC_SLEEP_MILLIS = 10 * 1000;
+    final static int SYNC_SLEEP_MILLIS = 10 * 1000;
 
-    String LOGIN = "cs131000";
-    String TMP_DIRECTORY = "/tmp";
-    String DROPBOX_DIRECTORY = TMP_DIRECTORY + System.getProperty("file.separator") + LOGIN;
+    // Set the dropbox directory, also the server directory
+    final static String DROPBOX_DIRECTORY = "/tmp" + System.getProperty("file.separator") + "Dropbox";
+    final static String DROPBOX_TEST_DIRECTORY = "/tmp" + System.getProperty("file.separator") + "Droptest";
 }
