@@ -4,16 +4,17 @@ import java.io.File;
 import java.util.*;
 
 import common.DropboxConstants;
-
+import common.DummyFile;
 /**
+ * Package: client
  * Class: DropboxClientFileManager
  * Description: Responsible for getting file info
  */
 public class DropboxClientFileManager {
 	
 	private String _home;
-	private HashMap<String, File> _fileMap;
-	private HashMap<String, File> _prevFileMap;
+	private HashMap<String, DummyFile> _fileMap;
+	private HashMap<String, DummyFile> _prevFileMap;
 	
 	private void showDirRecursive(File dir, int level){
 		if(dir.isDirectory()){
@@ -40,47 +41,54 @@ public class DropboxClientFileManager {
 			showDirRecursive(root, 0);
 	}
 	
-	public HashMap<String, File> buildFileMapRecursive(File dir){
+	public HashMap<String, DummyFile> buildFileMapRecursive(File dir){
 		File []files = dir.listFiles();
-		HashMap<String, File> curDirFileMap = new HashMap<String, File>();
-		if(!dir.getPath().equals(DropboxConstants.DROPBOX_TEST_DIRECTORY))
-			curDirFileMap.put(getRelativePath(dir), dir);
+		HashMap<String, DummyFile> curDirFileMap = new HashMap<String, DummyFile>();
+		if(!dir.getPath().equals(DropboxConstants.DROPBOX_TEST_DIRECTORY)){
+			DummyFile df = new DummyFile(dir.isDirectory(), dir);
+			df.setLastModifiedTime(dir.lastModified());
+			curDirFileMap.put(getRelativeRootPath(dir), df);
+		}
 		for( int i = 0; i < files.length; i++ ){
 			if(files[i].isDirectory()){
 				curDirFileMap.putAll(buildFileMapRecursive(files[i]));				
 			}
 			else{
-				String a = files[i].getAbsolutePath();
-				curDirFileMap.put(getRelativePath(files[i]), files[i]);
+				DummyFile df = new DummyFile(files[i].isDirectory(), files[i]);
+				df.setLastModifiedTime(files[i].lastModified());
+				curDirFileMap.put(getRelativeRootPath(files[i]), df);
 			}
 		}
 		return curDirFileMap;
 	}
-	
+	@SuppressWarnings("unchecked")
 	public void buildFileMap(){
+		
 		File root = new File(_home);
 		if(!root.isDirectory())
 			System.err.println("Your home dir is invalid");
 		else{
+			
 			if(_fileMap != null)
-				_prevFileMap = (HashMap<String, File>)(_fileMap.clone());
+			{
+				
+				_prevFileMap = (HashMap<String, DummyFile>)(_fileMap.clone());
+			}
 			_fileMap = buildFileMapRecursive(root);
 		}
 	}
 	public void printFileMap(){
+		@SuppressWarnings("rawtypes")
 		Iterator it = _fileMap.entrySet().iterator();
 		while(it.hasNext()){
-			Map.Entry<String, File> entry = (Map.Entry<String, File>)it.next();
-			File file = entry.getValue();
+			@SuppressWarnings("unchecked")
+			Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)it.next();
 			String fileName = entry.getKey();
-			//if(!file.isDirectory())
-				//System.out.println(fileName + file.getName());
-			//else
-				System.out.println(fileName);
+			System.out.println(fileName);
 		}
 	}
 	
-	public String getRelativePath(File file){
+	public String getRelativeRootPath(File file){
 		return file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(_home)+_home.length());
 	}
 	/**
@@ -88,8 +96,8 @@ public class DropboxClientFileManager {
 	 */
 	public DropboxClientFileManager(){
 		_home = DropboxConstants.DROPBOX_TEST_DIRECTORY;
-		_fileMap = new HashMap<String, File>();
-		_prevFileMap = new HashMap<String, File>();
+		_fileMap = new HashMap<String, DummyFile>();
+		_prevFileMap = new HashMap<String, DummyFile>();
 	}
 	
 	/**
@@ -98,9 +106,8 @@ public class DropboxClientFileManager {
 	 */
 	public DropboxClientFileManager(String home){
 		_home = home;
-		_fileMap = new HashMap<String, File>();
-		_prevFileMap = new HashMap<String, File>();
-		buildFileMap();
+		_fileMap = new HashMap<String, DummyFile>();
+		_prevFileMap = new HashMap<String, DummyFile>();
 	}
 	
 	/**
@@ -110,11 +117,11 @@ public class DropboxClientFileManager {
 		return _home;
 	}
 	
-	public HashMap<String, File> getFileMap(){
+	public HashMap<String, DummyFile> getFileMap(){
 		return _fileMap;
 	}
 	
-	public HashMap<String, File> getPrevFileMap(){
+	public HashMap<String, DummyFile> getPrevFileMap(){
 		return _prevFileMap;
 	}
 }

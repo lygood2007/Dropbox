@@ -4,7 +4,7 @@ import common.DropboxConstants;
 import java.io.*;
 
 /**
- * Package: csci1310.client
+ * Package: client
  * Class: DropboxClient
  * Description:
  */
@@ -25,11 +25,13 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 	 */
     public void run() {
     	try{
-    		_cn.connect();
-    		// Chain the stream to low-level stream
-    		_sw = new DropboxClientStreamWriter(_debug,_cn.getSocket(), _fm);
-    		sync();
-    		Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
+    		while(true){
+    			_cn.connect();
+    			// Chain the stream to low-level stream
+    			_sw = new DropboxClientStreamWriter(_debug,_cn.getSocket(), _fm);
+    			sync();
+    			Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
+    		}
     	}catch(InterruptedException e){
     		System.err.println("Thread sleep error");
     		if( _debug )
@@ -51,6 +53,7 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 
     	System.out.println("The directoy content of your home is:");
     	//_fm.showDir();
+    	_fm.buildFileMap();
     	_fm.printFileMap();
     	// Sync once
     	_sw.writeFromFileMap(_fm.getFileMap(), _fm.getPrevFileMap());

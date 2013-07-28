@@ -6,9 +6,9 @@ package common;
  * Description: Defines all of the constants for network protocol
  */
 public interface ProtocolConstants {
-	final static byte OP_NULL = 0;
-	final static byte OP_ADD = 1;
-	final static byte OP_DEL = 2;
-	final static byte OP_MOD = 3;
-	final static int PACK_BEGIN = 0x0fff;
+	final static byte OP_NULL = 0x00;
+	final static byte OP_ADD = 0x01;
+	final static byte OP_DEL = 0x02;
+	final static byte OP_MOD = 0x03;
+	final static int PACK_BEGIN = 0x00000fff;
 }

@@ -3,9 +3,10 @@ package client;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import common.ProtocolConstants;
+import common.*;
 
 /**
+ * Package: client
  * Class: DropboxClientStreamWriter
  * Description: Responsible for writing data into stream
  */
@@ -15,62 +16,46 @@ public class DropboxClientStreamWriter {
 	DataOutputStream _os;
 	DropboxClientFileManager _fm;
 	
-	private class FileOperation{
-		private byte _operation;
-		private File _file;
-		
-		FileOperation(){
-			_operation = ProtocolConstants.OP_NULL;
-			_file = null;
-		}
-		
-		FileOperation(byte operation, File file){
-			_operation = operation;
-			_file = file;
-		}
-		
-		public File getFile(){
-			return _file;
-		}
-		
-		public byte getOperation(){
-			return _operation;
-		}
-	}
-	
-	public void writeFromFileMap(HashMap<String, File> fileMap, HashMap<String, File> prevFileMap) throws IOException {
+	public void writeFromFileMap(HashMap<String, DummyFile> fileMap, HashMap<String, DummyFile> prevFileMap) throws IOException {
 		HashMap<String, FileOperation> operations = new HashMap<String, FileOperation>();
 		
- 		int fileNum = fileMap.size();
+		@SuppressWarnings("rawtypes")
 		Iterator it = fileMap.entrySet().iterator();
 		while(it.hasNext()){
-			Map.Entry<String, File> entry = (Map.Entry<String, File>)(it.next());
+			@SuppressWarnings("unchecked")
+			Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)(it.next());
 			String key = entry.getKey();
-			File file = entry.getValue();
-			File prev = prevFileMap.get(key);
+			DummyFile file = entry.getValue();
+			DummyFile prev = prevFileMap.get(key);
 			if( prev != null ){
-				long modified = file.lastModified();
-				long prevModified = file.lastModified();
+				//File f = file.getFile();
+				//File prevf = prev.getFile();
+				long modified = file.getLastModifiedTime();
+				long prevModified = prev.getLastModifiedTime();
 				if( prevModified != modified ){
 					// Need to update
-					operations.put(key, new FileOperation(ProtocolConstants.OP_MOD, file));
+					operations.put(key,
+							new FileOperation(ProtocolConstants.OP_MOD, file));
 				}
 			}
 			else{
 				// Need to add
-				operations.put(key, new FileOperation(ProtocolConstants.OP_ADD, file));
+				operations.put(key,
+						new FileOperation(ProtocolConstants.OP_ADD, file));
 			}
 		}
 		
 		it = prevFileMap.entrySet().iterator();
 		while(it.hasNext()){
-			Map.Entry<String, File> entry = (Map.Entry<String, File>)(it.next());
+			@SuppressWarnings("unchecked")
+			Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)(it.next());
 			String key = entry.getKey();
-			File file = entry.getValue();
-			File cur = fileMap.get(key);
+			DummyFile file = entry.getValue();
+			DummyFile cur = fileMap.get(key);
 			if(cur == null){
 				// Need to delete
-				operations.put(key, new FileOperation(ProtocolConstants.OP_DEL, file));
+				operations.put(key,
+						new FileOperation(ProtocolConstants.OP_DEL, file));
 			}
 		}
 		
@@ -80,24 +65,28 @@ public class DropboxClientStreamWriter {
 	public void writeOperations(HashMap<String, FileOperation> operations){
 		try{
 			writePackage();
+			//writeFileNum(1);
 			writeFileNum(operations.size());
+			@SuppressWarnings("rawtypes")
 			Iterator it = operations.entrySet().iterator();
 			while(it.hasNext()){
+				@SuppressWarnings("unchecked")
 				Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)(it.next());
 				String key = entry.getKey();
 				FileOperation op = entry.getValue();
-				File file = op.getFile();
+				File file = op.getDummyFile().getFile();
 				
 				writeFileName(key);
+				writeLastModifiedTime(file.lastModified());
 				writeOperation(op.getOperation());
-				writeFileFlag(file.isDirectory());
+				writeFileFlag(op.getDummyFile().isDir());
 				if(!file.isDirectory() &&
 						(op.getOperation() == ProtocolConstants.OP_ADD ||
 						 op.getOperation() == ProtocolConstants.OP_MOD)){
 					// We need to write the file content
-					//FileInputStream is = new FileInputStream(file);
-					//writeFileLength(file.length());
-					//writeFileContent(is);
+					FileInputStream is = new FileInputStream(file);
+					writeFileLength(file.length());
+					writeFileContent(is);
 				}
 			}
 		}catch(IOException e){
@@ -106,9 +95,7 @@ public class DropboxClientStreamWriter {
 				e.printStackTrace();
 		}
 	}
-	public void writeOneFile() throws IOException {
-		
-	}
+
 	public void writeFileNum (int size) throws IOException {
 		if(_os != null){
 			_os.writeInt(size);
@@ -140,7 +127,7 @@ public class DropboxClientStreamWriter {
 		byte []bytes = fileName.getBytes();
 		if(_os != null){
 			_os.writeInt(bytes.length);
-			_os.writeBytes(fileName);
+			_os.write(bytes);
 			_os.flush();
 		}
 		
@@ -166,6 +153,11 @@ public class DropboxClientStreamWriter {
 		if(_os != null){
 			_os.writeInt(ProtocolConstants.PACK_BEGIN);
 		}
+	}
+	
+	public void writeLastModifiedTime(long time) throws IOException{
+		if(_os != null)
+			_os.writeLong(time);
 	}
 	/**
 	 * Constructor
