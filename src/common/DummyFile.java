@@ -42,4 +42,15 @@ public class DummyFile {
 	public boolean isDir(){
 		return _isDir;
 	}
+	
+	public boolean equals(Object o){
+		DummyFile d = (DummyFile)o;
+		if(d._isDir == _isDir &&
+				d._lastModifiedTime == _lastModifiedTime &&
+				d._file.getName().equals(_file.getName())){
+			return true;
+		}
+		else
+			return false;
+	}
 }
