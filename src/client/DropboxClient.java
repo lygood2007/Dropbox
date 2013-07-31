@@ -49,8 +49,11 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
     			}
     		}
     			// We get a connection, then sync
-    		while(_cn != null && _cn.getSocket().isConnected()){
+    		while(_cn != null && _cn.getSocket().isConnected()&& !_cn.getSocket().isClosed()){
+    			
+    			// Check the stream;
     			sync();
+    			
     			Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
     		}
     		
@@ -66,15 +69,14 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
     	finally{
     		_cn.close();
     	}
+    	
+    	System.out.println("Finish sync");
     }
 
     /**
      * Implement sync()
      */
     public boolean sync() throws IOException {
-
-    	
-    	//_fm.showDir();
     	
     	// Sync once
     	// Firstly read to see if there is file map from server, if yes, then we sync from server
@@ -83,8 +85,8 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 			System.out.println("I got data stream, now syncing");
 			HashMap<String, FileOperation> fileMap = _sp.parseFileMap();
 			_fm.receiveFileMap(fileMap);
-			if(_debug)
-				_fm.printReceivedFileMap();
+			//if(_debug)
+		    _fm.printReceivedFileMap();
 			_fm.processReceivedFileMap();
 			
 			System.out.println("Send an empty header");
@@ -106,7 +108,6 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 			_fm.printFileMap();
 			if(!_fm.checkDiff())
 			{
-				//System.out.println("Check diff: " + _fm.checkDiff());
 			    System.out.println("Your home is updated");
 				System.out.println("Now syncing your home to server");
 				try{
@@ -129,6 +130,14 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 						e.printStackTrace();
 				}
 			}
+		}else if(packHead == ProtocolConstants.PACK_INVALID_HEAD){
+			try{
+				_cn.getSocket().close();
+				}catch(IOException e){
+					System.out.println("Close socket error");
+					if(_debug)
+						e.printStackTrace();
+				}
 		}
         return false;
     }

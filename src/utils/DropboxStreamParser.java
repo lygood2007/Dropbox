@@ -133,7 +133,7 @@ public class DropboxStreamParser {
 			if(_debug)
 				System.out.println("Filename: "+fileName + "(" + flag +")"
 						+ " Operation: " + operation + " LastTime: " + lastModifiedTime);
-			if(fileBytes != null){
+			if(fileBytes != null && _debug){
 				String fileContent = new String(fileBytes);
 				System.out.println(fileContent);
 			}
@@ -157,5 +157,9 @@ public class DropboxStreamParser {
 		_is = is;
 		_debug = debug;
 		_home = home;
+	}
+	
+	public DataInputStream getInputStream(){
+		return _is;
 	}
 }

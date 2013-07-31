@@ -40,13 +40,14 @@ class DropboxClientHandler implements Runnable{
 	public void run(){
 		if(_sock != null && _sock.isConnected() ){
 			while(true){
-				if(!_sock.isConnected())
+				if(!_sock.isConnected()||_sock.isClosed())
 					break;
+				
 				int	packHead = _sp.parse();
 				if(packHead == ProtocolConstants.PACK_DATA_HEAD){
 					HashMap<String, FileOperation> fileMap = _sp.parseFileMap();
 					_fm.receiveFileMap(fileMap);
-					if(_debug)
+					//if(_debug)
 						_fm.printReceivedFileMap();
 					
 					_fm.processReceivedFileMap();
@@ -77,9 +78,18 @@ class DropboxClientHandler implements Runnable{
 					{
 						dispatchEmptyHeader();
 					}
+				}else if(packHead == ProtocolConstants.PACK_INVALID_HEAD){
+					try{
+					_sock.close();
+					}catch(IOException e){
+						System.out.println("Close socket");
+						if(_debug)
+							e.printStackTrace();
+					}
 				}
 			}
 		}
+		System.out.println("Finish sync");
 	}
 	
 	public void dispatchFileMap(){
@@ -130,12 +140,14 @@ public class DropboxServer implements FileSynchronizationServer {
     	ServerSocket serverSocket = null;
     	try{
     		serverSocket = new ServerSocket(_port);
-    		serverSocket.setSoTimeout(100*1000);
+    		serverSocket.setSoTimeout(1000*100);
+    		while(true)
+    		{
     		client = serverSocket.accept();
     		System.out.println("Get connection from " + client.getInetAddress().getHostAddress());
     		Thread t = new Thread(new DropboxClientHandler(client, _debug, _home));
     		t.start();
-    		client = serverSocket.accept();
+    		}
     	}catch(InterruptedIOException e){
     		System.err.println("Time out");
     		if(_debug)

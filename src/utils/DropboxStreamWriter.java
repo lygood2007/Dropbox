@@ -191,4 +191,8 @@ public class DropboxStreamWriter {
 		_debug = debug;
 		_os = os;
 	}
+	
+	public DataOutputStream getOutputStream(){
+		return _os;
+	}
 }

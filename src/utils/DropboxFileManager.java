@@ -40,6 +40,7 @@ public class DropboxFileManager {
 			}
 		}
 	}
+	
 	public void showDir(){
 		File root = new File(_home);
 		if(!root.isDirectory())
@@ -97,15 +98,17 @@ public class DropboxFileManager {
 			String fileName = entry.getKey();
 			System.out.println(fileName);
 		}
-		
-		System.out.println("Prev fileMap is:");
-		//@SuppressWarnings("rawtypes")
-		it = _prevFileMap.entrySet().iterator();
-		while(it.hasNext()){
-			@SuppressWarnings("unchecked")
-			Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)it.next();
-			String fileName = entry.getKey();
-			System.out.println(fileName);
+		// In debug mode, we print the prev map
+		if(_debug){
+			System.out.println("Prev fileMap is:");
+			//@SuppressWarnings("rawtypes")
+			it = _prevFileMap.entrySet().iterator();
+			while(it.hasNext()){
+				@SuppressWarnings("unchecked")
+				Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)it.next();
+				String fileName = entry.getKey();
+				System.out.println(fileName);
+			}
 		}
 	}
 	
@@ -200,6 +203,15 @@ public class DropboxFileManager {
 						file.delete();
 				}
 			}
+		}
+		
+		// We need to rebuild the map and clone the current one into prev map
+		File root = new File(_home);
+		if(!root.isDirectory() || !root.exists())
+			System.err.println("Your home dir is invalid");
+		else{
+			_fileMap = buildFileMapRecursive(root);
+			_prevFileMap = (HashMap<String, DummyFile>)_fileMap.clone();
 		}
 	}
 	
