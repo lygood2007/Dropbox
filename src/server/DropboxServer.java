@@ -1,25 +1,11 @@
 package server;
 
 import common.*;
+
 import java.net.*;
 import java.io.*;
 import java.util.*;
-
-/**
- * Package: server
- * Class: ParserException
- * Description: Exception when error occurs in parser
- */
-class ParserException extends Exception{
-	public ParserException(String message){
-		super(message);
-	}
-	
-	public ParserException(){
-		super();
-	}
-}
-	
+import utils.*;
 /**
  * 
  * Package: server
@@ -28,199 +14,111 @@ class ParserException extends Exception{
  */
 class DropboxClientHandler implements Runnable{
 	
-	Socket _sock;
-	DataInputStream _is;
-	boolean _debug;
+	private Socket _sock;
 	
-	public DropboxClientHandler(Socket sock, boolean debug){
+	private boolean _debug;
+	
+	DropboxStreamParser _sp;
+	DropboxFileManager _fm;
+	DropboxStreamWriter _sw;
+	
+	public DropboxClientHandler(Socket sock, boolean debug, String home){
 		_sock = sock;
 		_debug = debug;
 		try{
-			_is = new DataInputStream(_sock.getInputStream());
+			_fm = new DropboxFileManager(home, _debug);
+			_sp = new DropboxStreamParser(_fm.getHome(),new DataInputStream(_sock.getInputStream()), _debug);
+			_sw = new DropboxStreamWriter(_fm.getHome(),new DataOutputStream(_sock.getOutputStream()), _debug);
+			
 		}catch(IOException e){
-			System.out.println("IO error");
+			System.err.println("IO error occurs when you get input stream from socket");
+			if(_debug)
+				e.printStackTrace();
 		}
-	}
-	
-	// Parse the stream got from socket
-	public void streamParser() throws IOException, ParserException {
-		if(_is != null){
-			
-			int packBegin = _is.readInt();
-			if(packBegin == ProtocolConstants.PACK_BEGIN){
-				// Valid stream
-				
-				int fileNum = _is.readInt();
-				if(_debug)
-					System.out.println("Filenum: " + fileNum);
-				
-				// The hashmap is used for storing the structure
-				HashMap<String, FileOperation> fileMap = new HashMap<String, FileOperation>();
-				for( int i = 0; i < fileNum; i++ ){
-					// Read each file
-					readEach(_is, fileMap);
-				}
-				
-				if(_debug)
-					printFileMap(fileMap);
-				
-				processFileMap(fileMap);
-			}
-		}
-			
 	}
 	
 	public void run(){
-		if( _is != null && _sock != null ){
-			try{
-				streamParser();
-			}catch(IOException e){
-				System.err.println("Read error");
-			}catch(ParserException e){
-				System.err.println("Parsing error");
-			}
-		}
-	}
-	
-	public void readEach(DataInputStream is, HashMap<String, FileOperation> fileMap) throws IOException {
-		if(is != null){
-			int nameLength = is.readInt();
-			if(_debug){
-				System.out.println("Name length: " + nameLength);
-			}
-			byte []nameBytes = new byte[nameLength];
-			is.read(nameBytes);
-			String fileName = new String(nameBytes);
-		
-			long lastModifiedTime = is.readLong();
-			byte operation = is.readByte();
-			
-			// Push the file operation into hashmap
-			
-			boolean flag = is.readBoolean();
-			DummyFile f = new DummyFile(flag,
-					new File(DropboxConstants.DROPBOX_DIRECTORY+fileName));
-			
-			FileOperation fo = new FileOperation(operation, f);
-			fileMap.put(fileName, fo);
-			long fileLength = 0;
-			byte []fileBytes = null;
-			
-			if(flag == false &&
-					(operation == ProtocolConstants.OP_ADD ||
-					operation == ProtocolConstants.OP_MOD)){
-				fileLength = is.readLong();
+		if(_sock != null && _sock.isConnected() ){
+			while(true){
+				if(!_sock.isConnected()||_sock.isClosed())
+					break;
 				
-				/**
-				 * CAUTION:
-				 * HERE IT MEANS IT DOES NOT SUPPORT LARGE FILE
-				 * REVISE THIS LATER
-				 */
-				fileBytes = new byte[(int)fileLength];
-				//is.read(fileBytes);
-				int i = 0;
-				while(i < fileLength){
-					fileBytes[i] = is.readByte();
-					i++;
-				}
-				fo.setBytes(fileBytes);
-			}
-				// Print the data we get
-			if(_debug)
-				System.out.println("Filename: "+fileName + "(" + flag +")"
-						+ " Operation: " + operation + " LastTime: " + lastModifiedTime);
-			if(fileBytes != null){
-				String fileContent = new String(fileBytes);
-				System.out.println(fileContent);
-			}
-		}
-	}
+				int	packHead = _sp.parse();
+				if(packHead == ProtocolConstants.PACK_DATA_HEAD){
+					HashMap<String, FileOperation> fileMap = _sp.parseFileMap();
+					_fm.receiveFileMap(fileMap);
+					//if(_debug)
+						_fm.printReceivedFileMap();
+					
+					_fm.processReceivedFileMap();
+					
+					System.out.println("Send an empty header");
+					try{
+						_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
+					}catch(IOException e){
+						System.err.println("Error occurs when writing data header");
+						if(_debug)
+							e.printStackTrace();
+					}
+				}else if(packHead == ProtocolConstants.PACK_QUERY_HEAD){
 
-	public void printFileMap(HashMap<String, FileOperation> fileMap){
-		
-		System.out.println("The filemap we got is: ");
-		@SuppressWarnings("rawtypes")
-		Iterator it = fileMap.entrySet().iterator();
-		int i = 0;
-		while(it.hasNext()){
-			@SuppressWarnings("unchecked")
-			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
-			String key = entry.getKey();
-			FileOperation fo = entry.getValue();
-			System.out.println("[Entry" + i + "] " + key + " " + FileOperation.getOperationString(fo.getOperation()));
-			byte bytes[] = fo.getBytes();
-			if(bytes != null){
-				System.out.println("[FileContent]");
-				System.out.println(new String(bytes));
-			}
-			i++;
-		}
-	}
-	
-	public void processFileMap(HashMap<String, FileOperation> fileMap) throws IOException{
-		// Firstly deal with directory
-		@SuppressWarnings("rawtypes")
-		Iterator it = fileMap.entrySet().iterator();
-		while(it.hasNext()){
-			@SuppressWarnings("unchecked")
-			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
-			String key = entry.getKey();
-			FileOperation fo = entry.getValue();
-			File file = fo.getDummyFile().getFile();
-			if(fo.getDummyFile().isDir()){
-				if(fo.getOperation() == ProtocolConstants.OP_ADD
-					&&!file.exists()){
-					file.mkdirs();
-					fileMap.remove(key);
-				}
-				else if(fo.getOperation() == ProtocolConstants.OP_DEL && file.exists()){
-					deleteSubDirs(file);
-					fileMap.remove(key);
-				}
-			}
-		}
-		
-		// Then deal with file
-		it = fileMap.entrySet().iterator();
-		while(it.hasNext()){
-			@SuppressWarnings("unchecked")
-			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
-			String key = entry.getKey();
-			FileOperation fo = entry.getValue();
-			File file = fo.getDummyFile().getFile();
-			if(!fo.getDummyFile().isDir()){
-				if(fo.getOperation() == ProtocolConstants.OP_ADD ||
-						fo.getOperation() == ProtocolConstants.OP_MOD){
-					if(!file.exists())		
-						file.createNewFile();
-					byte bytes[] = fo.getBytes();
-					if(bytes != null){
-						FileOutputStream fs = new FileOutputStream(file);
-						fs.write(bytes);
+					System.out.println("I got query");
+					System.out.println("The directoy content of your home is:");
+					_fm.buildFileMap();
+					_fm.printFileMap();
+					dispatchFileMap();
+				}else if(packHead == ProtocolConstants.PACK_NULL_HEAD){		
+					System.out.println("The directoy content of your home is:");
+					_fm.buildFileMap();
+					_fm.printFileMap();
+					if(!_fm.checkDiff()){
+						System.out.println("Now sync the home from server to client");
+						dispatchFileMap();
+					}else
+					{
+						dispatchEmptyHeader();
+					}
+				}else if(packHead == ProtocolConstants.PACK_INVALID_HEAD){
+					try{
+					_sock.close();
+					}catch(IOException e){
+						System.out.println("Close socket");
+						if(_debug)
+							e.printStackTrace();
 					}
 				}
 			}
 		}
+		System.out.println("Finish sync");
 	}
 	
-	public void deleteSubDirs(File file){
-		if(file.isDirectory()){
-			File[] list = file.listFiles();
-			for(File f:list){
-				if(f.isDirectory())
-					deleteSubDirs(f);
-				f.delete();
-			}
-			file.delete();
+	public void dispatchFileMap(){
+		// dispatch the file map into client
+		
+    	System.out.println("Now syncing your home to client");
+    	try{
+    		_sw.writePackageHeader(ProtocolConstants.PACK_DATA_HEAD);
+    	}catch(IOException e){
+    		System.err.println("Error occurs when writing data header");
+    		if(_debug)
+    			e.printStackTrace();
+    	}
+    	_sw.writeFromFileMap(_fm.getFileMap(), _fm.getPrevFileMap());
+	}
+	
+	public void dispatchEmptyHeader(){
+		try{
+			_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
+		}catch(IOException e){
+			System.err.print("Error occurs when dispatching null header");
+			if(_debug)
+				e.printStackTrace();
 		}
 	}
+
 	// Getters
 	public Socket getSocket(){
 		return _sock;
-	}
-	
-	public DataInputStream getStream(){
-		return _is;
 	}
 }
 /**
@@ -233,27 +131,22 @@ public class DropboxServer implements FileSynchronizationServer {
 	private int _port;
 	private boolean _debug;
 	private boolean _useUI;
+	private String _home;
 	
     public void listen() {
     	System.out.println("Server is listening...");
     	// Now only support one client
     	Socket client = null;
     	ServerSocket serverSocket = null;
-    	// Close the server in 5 seconds
-    	//long startTime = System.currentTimeMillis();
-    	//long elapsedTime = 0;
     	try{
     		serverSocket = new ServerSocket(_port);
-    		serverSocket.setSoTimeout(100*1000);
-    		while(true){
-    			//elapsedTime = (new Date()).getTime() - startTime;
-    			
-    			client = serverSocket.accept();
-    			System.out.println("Get connection from " + client.getInetAddress().getHostAddress());
-    			Thread t = new Thread(new DropboxClientHandler(client, _debug));
-    			t.start();
-    			//DropboxClientHandler h = new DropboxClientHandler(client);
-    			//h.run();
+    		serverSocket.setSoTimeout(1000*100);
+    		while(true)
+    		{
+    		client = serverSocket.accept();
+    		System.out.println("Get connection from " + client.getInetAddress().getHostAddress());
+    		Thread t = new Thread(new DropboxClientHandler(client, _debug, _home));
+    		t.start();
     		}
     	}catch(InterruptedIOException e){
     		System.err.println("Time out");
@@ -284,12 +177,14 @@ public class DropboxServer implements FileSynchronizationServer {
     	_port = DropboxConstants.SERVER_PORT;
     	_debug = false;
     	_useUI = false;
+    	_home = DropboxConstants.DROPBOX_DIRECTORY;
     }
     
-    public DropboxServer( int port, boolean debug, boolean useUI ){
+    public DropboxServer(int port, boolean debug, boolean useUI, String home){
     	_port = port;
     	_debug = debug;
     	_useUI = useUI;
+    	_home = home;
     }
     
     public static void main(String[] args) {
@@ -297,11 +192,14 @@ public class DropboxServer implements FileSynchronizationServer {
     	int port = DropboxConstants.SERVER_PORT;
     	boolean debug = false;
     	boolean useUI = false;	
+    	String home = DropboxConstants.DROPBOX_DIRECTORY;
     	
     	System.out.println("Dropbox Server:");
     	System.out.println("-d for debug mode (default false)" );
     	System.out.println("-u to use user interface (default false)");
     	System.out.println("-p to specify port (default 5000)");
+    	System.out.println("-home following the home folder your server is located"
+    			+ " (default using /tmp/Dropbox)");
     	
     	for( int i = 0; i < args.length; i++ ){
     		if(args[i].equals("-d"))
@@ -312,8 +210,13 @@ public class DropboxServer implements FileSynchronizationServer {
 				i++;
 				port = Integer.parseInt(args[i]);
 			}
+			else if(args[i].equals("-h")){
+				i++;
+				home = args[i];
+			}
     	}
-    	DropboxServer server = new DropboxServer(port,debug,useUI);
+    	DropboxServer server = new DropboxServer(port,debug,useUI,home);
+    	System.err.println("Home: " + home);
     	server.listen();
     }
 }

@@ -31,6 +31,7 @@ public class Dropbox_main {
 	    }
 	    frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
 	    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	    frame.setResizable(false);
 	    frame.setVisible(true);
 	  }
 	public static void main(String[] argc){

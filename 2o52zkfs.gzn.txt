@@ -1,0 +1,42 @@
+﻿Merge branch 'master' of https://github.com/lygood2007/Dropbox
+
+Conflicts:
+	bin/client/DropboxClient.class
+	bin/client/DropboxClientNet.class
+	bin/common/DropboxConstants.class
+	bin/common/DummyFile.class
+	bin/common/ProtocolConstants.class
+	bin/server/DropboxClientHandler.class
+	bin/server/DropboxServer.class
+#
+# It looks like you may be committing a merge.
+# If this is not correct, please remove the file
+#	.git/MERGE_HEAD
+# and try again.
+
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Your branch and 'origin/master' have diverged,
+# and have 1 and 2 different commits each, respectively.
+#   (use "git pull" to merge the remote branch into yours)
+#
+# All conflicts fixed but you are still merging.
+#   (use "git commit" to conclude merge)
+#
+# Changes to be committed:
+#
+#	new file:   bin/utils/DropboxFileManager.class
+#	new file:   bin/utils/DropboxStreamParser.class
+#	new file:   bin/utils/DropboxStreamWriter.class
+#	modified:   src/client/DropboxClient.java
+#	modified:   src/common/DropboxConstants.java
+#	modified:   src/common/DummyFile.java
+#	modified:   src/common/ProtocolConstants.java
+#	modified:   src/server/DropboxServer.java
+#	new file:   src/utils/DropboxFileManager.java
+#	new file:   src/utils/DropboxStreamParser.java
+#	new file:   src/utils/DropboxStreamWriter.java
+#
+
