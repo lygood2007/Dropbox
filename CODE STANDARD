@@ -22,7 +22,7 @@ d For others, name it using the usual way and don't use underscore, for example:
 a Don't commit if the code is not functional.
 b If others' code doesn't make sense, just ask!
 c Don't put all of the code into one class, refactor the structure frequently and define more classes to make it more clear.
-
+d Use assertions to help you debug
  
 
 
