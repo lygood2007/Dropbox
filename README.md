@@ -1,4 +1,4 @@
 Dropbox
 =======
 
-Dropbox-like system written in JAVA. Member: Xiaomeng Nan, Yan Li
+Dropbox-like system written in JAVA. Member: Xiaomeng Nan, Yan Li, Xiao Yi

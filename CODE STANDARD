@@ -1,0 +1,28 @@
+#CODE STANDARD#
+#READ BEFORE CODING! PLEASE FOLLOW THE RULES BELOW#
+
+1. Write appropriate comments to your code, for example:
+a If you need to mark something to do, write //TODO, or give it a time stamp like //TODO 04/01/14
+b If you want someone to review your code snippet, write //NEED REVIEW
+c If you think your code is unsafe but hasn't found any bugs, mention it in comments like // UNSAFE
+d Write more comments to your function to demonstrate what it does if the function body is long and complex.
+  You need to demonstrate what the parameters are for and the return value is what.
+
+
+2. Name standard:
+a For member variables: name it like: _var
+b For global static variables: name it like: g_var
+c For global constant variables: name it like: VAR
+d For others, name it using the usual way and don't use underscore, for example:
+  class: FileServer
+  function: recursiveRead
+  variable: treeMap
+
+3. MISCELLANEOUS
+a Don't commit if the code is not functional.
+b If others' code doesn't make sense, just ask!
+c Don't put all of the code into one class, refactor the structure frequently and define more classes to make it more clear.
+
+ 
+
+
