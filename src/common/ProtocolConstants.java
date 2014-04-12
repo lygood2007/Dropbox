@@ -14,4 +14,5 @@ public interface ProtocolConstants {
 	final static int PACK_QUERY_HEAD = 0x000000ff;
 	final static int PACK_NULL_HEAD = 0x0000000f;
 	final static int PACK_INVALID_HEAD = 0x00000000;
+	final static int PACK_BEGIN = 0x0000ffff;
 }
