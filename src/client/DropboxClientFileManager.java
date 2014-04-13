@@ -44,7 +44,7 @@ public class DropboxClientFileManager {
 	public HashMap<String, DummyFile> buildFileMapRecursive(File dir){
 		File []files = dir.listFiles();
 		HashMap<String, DummyFile> curDirFileMap = new HashMap<String, DummyFile>();
-		if(!dir.getPath().equals(DropboxConstants.DROPBOX_TEST_DIRECTORY)){
+		if(!dir.getPath().equals(DropboxConstants.DROPBOX_CLIENT_ROOT)){
 			DummyFile df = new DummyFile(dir.isDirectory(), dir);
 			df.setLastModifiedTime(dir.lastModified());
 			curDirFileMap.put(getRelativeRootPath(dir), df);
@@ -95,7 +95,7 @@ public class DropboxClientFileManager {
 	 * Constructor
 	 */
 	public DropboxClientFileManager(){
-		_home = DropboxConstants.DROPBOX_TEST_DIRECTORY;
+		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
 		_fileMap = new HashMap<String, DummyFile>();
 		_prevFileMap = new HashMap<String, DummyFile>();
 	}

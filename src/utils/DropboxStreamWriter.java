@@ -179,7 +179,7 @@ public class DropboxStreamWriter {
 	public DropboxStreamWriter(){
 		_debug = false;
 		_os = null;
-		_home = DropboxConstants.DROPBOX_DIRECTORY;
+		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
 	}
 	/**
 	 * Constructor

@@ -56,7 +56,7 @@ public class DropboxClientNet {
 	 */
 	public DropboxClientNet(){
 		_ip = "127.0.0.1";
-		_port = DropboxConstants.SERVER_PORT;
+		_port = DropboxConstants.FILE_SERVER_PORT;
 		_sock = null;
 		_debug = false;
 	}
