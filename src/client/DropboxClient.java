@@ -85,7 +85,6 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 			System.out.println("I got data stream, now syncing");
 			HashMap<String, FileOperation> fileMap = _sp.parseFileMap();
 			_fm.receiveFileMap(fileMap);
-			//if(_debug)
 		    _fm.printReceivedFileMap();
 			_fm.processReceivedFileMap();
 			
