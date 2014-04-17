@@ -3,7 +3,7 @@ package common;
 import java.io.*;
 
 /**
- * Package: common
+ * 
  * Class: FileCommon
  * Description: This class contains the supplementary operations of File
  */

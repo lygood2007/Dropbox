@@ -13,11 +13,11 @@ import java.io.*;
 
 
 /**
- * Package: utils
+ * 
  * Class: DropboxStreamParser
  * Description: Parse the stream;
  */
-public class DropboxStreamParser {
+public class SyncStreamParser {
 	
 	private DataInputStream _is;
 	private String _home;
@@ -147,13 +147,13 @@ public class DropboxStreamParser {
 			return ProtocolConstants.PACK_INVALID_HEAD;
 	}
 	
-	public DropboxStreamParser(){
+	public SyncStreamParser(){
 		_is = null;
 		_debug = false;
 		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
 	}
 	
-	public DropboxStreamParser(String home, DataInputStream is, boolean debug){
+	public SyncStreamParser(String home, DataInputStream is, boolean debug){
 		_is = is;
 		_debug = debug;
 		_home = home;

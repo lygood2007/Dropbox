@@ -7,11 +7,11 @@ import java.util.*;
 import common.*;
 
 /**
- * Package: client
+ *
  * Class: DropboxClientStreamWriter
  * Description: Responsible for writing data into stream
  */
-public class DropboxStreamWriter {
+public class SyncStreamWriter {
 
 	private boolean _debug;
 	private DataOutputStream _os;
@@ -176,7 +176,7 @@ public class DropboxStreamWriter {
 	/**
 	 * Constructor
 	 */
-	public DropboxStreamWriter(){
+	public SyncStreamWriter(){
 		_debug = false;
 		_os = null;
 		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
@@ -186,7 +186,7 @@ public class DropboxStreamWriter {
 	 * @param debug: Debug mode?
 	 * @param sock: Socket
 	 */
-	public DropboxStreamWriter(String home, DataOutputStream os, boolean debug){
+	public SyncStreamWriter(String home, DataOutputStream os, boolean debug){
 		_home = home;
 		_debug = debug;
 		_os = os;

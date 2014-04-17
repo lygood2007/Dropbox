@@ -2,6 +2,12 @@ package common;
 
 import common.ProtocolConstants;
 
+/**
+ * 
+ * Class: FileOperation
+ * Description: Basic functions for conversion
+ *              between byte operation and string
+ */
 public class FileOperation {
 	private byte _operation;
 	private DummyFile _file;

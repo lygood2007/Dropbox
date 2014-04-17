@@ -3,7 +3,7 @@ package common;
 import java.io.*;
 
 /**
- * Package: common
+ * 
  * Class: DummyFile
  * Description: We encapsulate the File class here because we may
  * 				use a file that does not exist. We need to store manually

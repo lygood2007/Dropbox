@@ -10,7 +10,7 @@ import common.DummyFile;
 import common.FileOperation;
 import common.ProtocolConstants;
 /**
- * Package: client
+ * 
  * Class: DropboxClientFileManager
  * Description: Responsible for getting file info
  */

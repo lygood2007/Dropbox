@@ -3,12 +3,13 @@ package fileserver;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+
 import utils.*;
 import common.*;
 
 /**
  * 
- * Package: server
+ * 
  * Class: DropboxFileCliendHandler
  * Description: Handle the client connected, basically about network issue.
  */
@@ -16,27 +17,41 @@ class DropboxFileServerClientHandler implements Runnable{
 	
 	private Socket _sock;
 	
-	private boolean _debug;
+	private SyncStreamParser _sp;
+	private DropboxFileManager _fm;
+	private SyncStreamWriter _sw;
+	private DropboxFileServer _server;
+	private void _dlog(String str){
+		if(_server.debugMode())
+			System.out.println("[DropboxFileServerClientHandler (DEBUG)]:" + str);
+	}
 	
-	DropboxStreamParser _sp;
-	DropboxFileManager _fm;
-	DropboxStreamWriter _sw;
+	private void _elog(String str){
+		if(!_server.noException())
+			System.err.println("[DropboxFileServerClientHandler (ERROR)]:" + str);
+	}
 	
-	public DropboxFileServerClientHandler(Socket sock, boolean debug, String home){
+	private static void _log(String str){
+		System.out.println("[DropboxFileServerClientHandler]:" + str);
+	}
+	
+	public DropboxFileServerClientHandler(Socket sock,DropboxFileServer server){
 		_sock = sock;
-		_debug = debug;
+		_server = server;
+		assert _server != null;
 		try{
-			_fm = new DropboxFileManager(home, _debug);
-			_sp = new DropboxStreamParser(_fm.getHome(),new DataInputStream(_sock.getInputStream()), _debug);
-			_sw = new DropboxStreamWriter(_fm.getHome(),new DataOutputStream(_sock.getOutputStream()), _debug);
+			_fm = new DropboxFileManager(_server.disk(), _server.debugMode());
+			_sp = new SyncStreamParser(_fm.getHome(),new DataInputStream(_sock.getInputStream()), _server.debugMode());
+			_sw = new SyncStreamWriter(_fm.getHome(),new DataOutputStream(_sock.getOutputStream()), _server.debugMode());
 			
 		}catch(IOException e){
-			System.err.println("IO error occurs when you get input stream from socket");
-			if(_debug)
+			_elog("IO error occurs when you get input stream from socket");
+			if(_server.debugMode())
 				e.printStackTrace();
 		}
 	}
 	
+	@Override
 	public void run(){
 		if(_sock != null && _sock.isConnected() ){
 			while(true){
@@ -47,32 +62,32 @@ class DropboxFileServerClientHandler implements Runnable{
 				if(packHead == ProtocolConstants.PACK_DATA_HEAD){
 					HashMap<String, FileOperation> fileMap = _sp.parseFileMap();
 					_fm.receiveFileMap(fileMap);
-					//if(_debug)
+					if(_server.debugMode())
 						_fm.printReceivedFileMap();
 					
 					_fm.processReceivedFileMap();
 					
-					System.out.println("Send an empty header");
+					_dlog("Send an empty header");
 					try{
 						_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
 					}catch(IOException e){
-						System.err.println("Error occurs when writing data header");
-						if(_debug)
+						_elog("Error occurs when writing data header");
+						if(_server.debugMode())
 							e.printStackTrace();
 					}
 				}else if(packHead == ProtocolConstants.PACK_QUERY_HEAD){
 
-					System.out.println("I got query");
-					System.out.println("The directoy content of your home is:");
+					_dlog("I got query");
+					_dlog("The directoy content of your home is:");
 					_fm.buildFileMap();
 					_fm.printFileMap();
 					dispatchFileMap();
 				}else if(packHead == ProtocolConstants.PACK_NULL_HEAD){		
-					System.out.println("The directoy content of your home is:");
+					_dlog("The directoy content of your home is:");
 					_fm.buildFileMap();
 					_fm.printFileMap();
 					if(!_fm.checkDiff()){
-						System.out.println("Now sync the home from server to client");
+						_dlog("Now sync the home from server to client");
 						dispatchFileMap();
 					}else
 					{
@@ -82,36 +97,36 @@ class DropboxFileServerClientHandler implements Runnable{
 					try{
 					_sock.close();
 					}catch(IOException e){
-						System.out.println("Close socket");
-						if(_debug)
+						_elog("Close socket");
+						if(_server.debugMode())
 							e.printStackTrace();
 					}
 				}
 			}
 		}
-		System.out.println("Finish sync");
+		_dlog("Finish sync");
 	}
 	
-	public void dispatchFileMap(){
+	protected void dispatchFileMap(){
 		// dispatch the file map into client
 		
-    	System.out.println("Now syncing your home to client");
+    	_dlog("Now syncing your home to client");
     	try{
     		_sw.writePackageHeader(ProtocolConstants.PACK_DATA_HEAD);
     	}catch(IOException e){
-    		System.err.println("Error occurs when writing data header");
-    		if(_debug)
+    		_dlog("Error occurs when writing data header");
+    		if(_server.debugMode())
     			e.printStackTrace();
     	}
     	_sw.writeFromFileMap(_fm.getFileMap(), _fm.getPrevFileMap());
 	}
 	
-	public void dispatchEmptyHeader(){
+	protected void dispatchEmptyHeader(){
 		try{
 			_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
 		}catch(IOException e){
-			System.err.print("Error occurs when dispatching null header");
-			if(_debug)
+			_elog("Error occurs when dispatching null header");
+			if(_server.debugMode())
 				e.printStackTrace();
 		}
 	}

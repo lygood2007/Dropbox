@@ -15,4 +15,14 @@ public interface ProtocolConstants {
 	final static int PACK_NULL_HEAD = 0x0000000f;
 	final static int PACK_INVALID_HEAD = 0x00000000;
 	final static int PACK_BEGIN = 0x0000ffff;
+
+	/* Protocol header between master node and file server */
+	final static String PACK_STR_CONFIRM_HEAD = "CFM";
+	final static String PACK_STR_HEARTBEAT_HEAD = "HBT";
+	final static String PACK_STR_REQUEST_FS_HEAD = "RFS";
+	final static String PACK_STR_CLOSE_HEAD = "CLS";
+	final static String PACK_STR_REQUEST_MS_HEAD = "RMS";
+	final static String PACK_STR_SET_PRIO_HEAD = "SPR";
+	final static String PACK_STR_ID_HEAD = "IDF";
+	final static String PACK_STR_USR_HEAD = "USR";
 }

@@ -7,9 +7,7 @@ import common.ProtocolConstants;
 import java.io.*;
 import java.util.HashMap;
 
-import utils.DropboxFileManager;
-import utils.DropboxStreamWriter;
-import utils.DropboxStreamParser;
+import utils.*;
 
 /**
  * Package: client
@@ -21,8 +19,8 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
 	private boolean _debug;
 	private boolean _useUI;
 	
-	private DropboxStreamWriter _sw;
-	private DropboxStreamParser _sp;
+	private SyncStreamWriter _sw;
+	private SyncStreamParser _sp;
 	private DropboxClientNet _cn;
 	private DropboxFileManager _fm;
 	
@@ -39,8 +37,8 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
     			_cn.connect();
     			if(_cn.getSocket().isConnected())
     			{
-    				_sw = new DropboxStreamWriter(_fm.getHome(),new DataOutputStream(_cn.getSocket().getOutputStream()),_debug);
-    				_sp = new DropboxStreamParser(_fm.getHome(),new DataInputStream(_cn.getSocket().getInputStream()),_debug);
+    				_sw = new SyncStreamWriter(_fm.getHome(),new DataOutputStream(_cn.getSocket().getOutputStream()),_debug);
+    				_sp = new SyncStreamParser(_fm.getHome(),new DataInputStream(_cn.getSocket().getInputStream()),_debug);
     				// The first time we connect we write a query package to get the files from server 
     				System.out.println("Sent a package to server to query");
     				_sw.writePackageHeader(ProtocolConstants.PACK_QUERY_HEAD);
