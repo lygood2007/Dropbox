@@ -234,7 +234,7 @@ public class DropboxFileManager {
 	 * Constructor
 	 */
 	public DropboxFileManager(){
-		_home = DropboxConstants.DROPBOX_TEST_DIRECTORY;
+		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
 		_fileMap = new HashMap<String, DummyFile>();
 		_prevFileMap = new HashMap<String, DummyFile>();
 	}

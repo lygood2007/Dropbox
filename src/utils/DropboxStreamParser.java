@@ -150,7 +150,7 @@ public class DropboxStreamParser {
 	public DropboxStreamParser(){
 		_is = null;
 		_debug = false;
-		_home = DropboxConstants.DROPBOX_TEST_DIRECTORY;
+		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
 	}
 	
 	public DropboxStreamParser(String home, DataInputStream is, boolean debug){

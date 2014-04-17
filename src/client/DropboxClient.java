@@ -149,7 +149,7 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
     	_debug = false;
     	_useUI = false;
     	_cn = new DropboxClientNet();
-    	_fm = new DropboxFileManager(DropboxConstants.DROPBOX_TEST_DIRECTORY, _debug);
+    	_fm = new DropboxFileManager(DropboxConstants.DROPBOX_CLIENT_ROOT, _debug);
     }
     
     /**
@@ -175,8 +175,8 @@ public class DropboxClient implements FileSynchronizationClient, Runnable {
     	boolean debug = false;
     	boolean useUI = false;
     	String ip = "127.0.0.1";
-    	int port = DropboxConstants.SERVER_PORT;
-    	String home = DropboxConstants.DROPBOX_TEST_DIRECTORY;
+    	int port = DropboxConstants.FILE_SERVER_PORT;
+    	String home = DropboxConstants.DROPBOX_CLIENT_ROOT;
     	
     	// Show help:
     	System.out.println("Dropbox Client:");

@@ -1,8 +1,7 @@
-/.DS_Store
+/layout
+/master
+/utils
 /client
 /common
-/layout
 /server
-/utils
-/MasterNode
-/master
+/fileserver
