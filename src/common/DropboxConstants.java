@@ -24,4 +24,6 @@ public interface DropboxConstants {
     final static int MAX_CLIENTS_IN_FS = 3;
     
     final static int HEART_BEAT_HZ = 5*1000;
+    
+    final static String DEFAULT_PWD = "123456";
 }

@@ -119,24 +119,29 @@ class DropboxFileServerMasterNet {
 		}
 	}
 	
-	protected void sendAll() throws Exception{
+	// Only send name and password to master
+	protected String sendAll() throws Exception{
 		assert _out != null;
 		String output = _server.getID() + " " + _server.getPrio() +
 				" " + _server.getMaxClientNum();
-		Map<String, String> mp = _server.getMap();
+		Map<String, ClientNode> mp = _server.getClients();
 		Iterator it = mp.entrySet().iterator();
 		while(it.hasNext()){
 			Map.Entry pair = (Map.Entry)it.next();
-			output += " " + pair.getKey() + " " +pair.getValue(); 
+			String name = (String)pair.getKey();
+			ClientNode node = (ClientNode)pair.getValue();
+			output += " " + name + " " + node.getPassword(); 
 		}
 		output = ProtocolConstants.PACK_STR_ID_HEAD + " " + output;
-		NetComm.send(output,_out);
+		String reply = NetComm.sendAndRecv(output,_out,_in);
+		return reply;
 	}
 	
-	protected void sendUserID() throws Exception {
+	protected String sendUserID() throws Exception {
 		assert _userOut != null;
 		String output = ProtocolConstants.PACK_STR_USR_HEAD + " " + _server.getID();
-		NetComm.send(output,_userOut);
+		String reply = NetComm.sendAndRecv(output,_userOut, _userIn);
+		return reply;
 	}
 	
 	
@@ -147,12 +152,18 @@ class DropboxFileServerMasterNet {
 			_sock = new Socket(_serverIP, _serverPort);
 			_out = new PrintWriter(_sock.getOutputStream(), true);
 			_in = new BufferedReader(new InputStreamReader(_sock.getInputStream()));
-			sendAll();
+			String reply = sendAll();
+			if(!reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+				throw new Exception("Not confirmed");
+			}
 
 			_userSock = new Socket(_serverIP, _serverPort);
 			_userOut = new PrintWriter(_userSock.getOutputStream(), true);
 			_userIn = new BufferedReader(new InputStreamReader(_userSock.getInputStream()));
-			sendUserID();
+			String replyUser = sendUserID();
+			if(!replyUser.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+				throw new Exception("Not confirmed");
+			}
 		}catch(UnknownHostException e){
 			if(!_server.noException()){
 				_elog(e.toString());
@@ -181,30 +192,7 @@ class DropboxFileServerMasterNet {
 		if(!connected){
 			return connected;
 		}
-		try
-		{
-			
-			String response = NetComm.receive(_in);
-			String responseUser = NetComm.receive(_userIn);
 
-			assert response != null && responseUser != null;
-			// Hand shaked
-			if(response.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)&&
-					responseUser.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
-				connected = true;
-				
-				return connected;
-			}else{
-				connected = false;
-				// TODO: If false, should retry after ... seconds
-			}
-		}
-		catch(Exception e){
-			if(!_server.noException()){
-				_elog(e.toString());
-			}
-			connected = false;
-		}
 		if(!connected){
 			/* Remove the pair of socket */
 			_sock = null;

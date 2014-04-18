@@ -14,7 +14,7 @@ import common.*;
  * Description: Handle the client connected, do SYNCING!
  *              CAUTION: this class should be paid more attention.
  */
-class DropboxFileServerTerminalHandler implements Runnable{
+class DropboxFileServerSyncer extends ThreadBase{
 	
 	private Socket _sock;
 	private SyncStreamParser _sp;
@@ -34,7 +34,8 @@ class DropboxFileServerTerminalHandler implements Runnable{
 		System.out.println("[DropboxFileServerClientHandler]:" + str);
 	}
 	
-	public DropboxFileServerTerminalHandler(Socket sock,DropboxFileServer server){
+	public DropboxFileServerSyncer(Socket sock,DropboxFileServer server){
+		super("DropboxFileServerTerminalHandler", server.debugMode());
 		_sock = sock;
 		_server = server;
 		assert _server != null;
@@ -143,5 +144,11 @@ class DropboxFileServerTerminalHandler implements Runnable{
 	// Getters
 	public Socket getSocket(){
 		return _sock;
+	}
+
+	@Override
+	protected void clear() {
+		// TODO Auto-generated method stub
+		
 	}
 }

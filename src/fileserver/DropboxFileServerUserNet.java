@@ -105,23 +105,29 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		_log("-p: set the priority of this server ("+DropboxConstants.MIN_PRIO+
     			"-"+DropboxConstants.MAX_PRIO+")");
 		_log("-d: toggle debug mode");
-		_log("-a: add a client (-a 'name') (should be deprecated when client can connect to file server)");
+		_log("-a: add a client (-a 'name' 'password'(optional)) (should be deprecated when client can connect to file server)");
 		_log("-r: remove a client (-r 'name')(should be deprecated when client can connect to file server)");
 		_log("-ls: print the status of the file server");
+		_log("-w: change password (-a 'name' 'old password' 'password')");
 	}
 	
 	protected void sendClose() throws Exception{
 		NetComm.send(ProtocolConstants.PACK_STR_CLOSE_HEAD, _out);
+		// No need to get reply here
 	}
 	
 	protected boolean sendAdd(String name) throws Exception{
-		String dir = _server.getMap().get(name);
+		ClientNode cn = _server.getClients().get(name);
+		assert cn != null;
+		
+		String dir = cn.getDir();
+		String password = cn.getPassword();
 		assert dir != null;
 		
 		String str = ProtocolConstants.PACK_STR_ADD_CLIENT_HEAD;
-		str = str + " " + name + " " + dir;
-		NetComm.send(str, _out);
-		if(NetComm.receive(_in).equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+		str = str + " " + name + " " + password;
+		String reply = NetComm.sendAndRecv(str, _out, _in);
+		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			return true;
 		}else{
 			return false;
@@ -131,8 +137,8 @@ public class DropboxFileServerUserNet extends ThreadBase{
 	protected boolean sendRemove(String name) throws Exception{
 		String str = ProtocolConstants.PACK_STR_REMOVE_CLIENT_HEAD;
 		str = str + " " + name;
-		NetComm.send(str, _out);
-		if(NetComm.receive(_in).equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+		String reply = NetComm.sendAndRecv(str, _out, _in);
+		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			return true;
 		}else{
 			return false;
@@ -142,10 +148,21 @@ public class DropboxFileServerUserNet extends ThreadBase{
 	protected boolean sendPriority() throws Exception{
 		String str = ProtocolConstants.PACK_STR_SET_PRIO_HEAD;
 		str = str + " " + _server.getPrio();
-		NetComm.send(str, _out);
+		String reply = NetComm.sendAndRecv(str, _out, _in);
 		//_dlog("sended");
-		if(NetComm.receive(_in).equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			//_dlog("confirmed");
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
+	protected boolean sendChangePassword(String name, String password) throws Exception{
+		String str = ProtocolConstants.PACK_STR_CHANGE_PWD_HEAD;
+		str = str + " " + name + " " + password;
+		String reply = NetComm.sendAndRecv(str, _out, _in);
+		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			return true;
 		}else{
 			return false;
@@ -184,9 +201,13 @@ public class DropboxFileServerUserNet extends ThreadBase{
 				_elog("Invalid input");
 			}
 		}
-		else if(st.countTokens() == 2){
+		else if(st.countTokens() >= 2){
 			String tmp = st.nextToken();
 			if(tmp.equals("-p")){
+				if(st.countTokens() > 1){
+					_elog("Invalid input");
+					return;
+				}
 				int prio = Integer.parseInt(st.nextToken());
 				if(prio < DropboxConstants.MIN_PRIO){
 					_elog("Priority is too small");
@@ -204,6 +225,10 @@ public class DropboxFileServerUserNet extends ThreadBase{
 				}
 			}
 			else if(tmp.equals("-r")){
+				if(st.countTokens() > 1){
+					_elog("Invalid input");
+					return;
+				}
 				String name = st.nextToken();
 				if(_server.removeClient(name) == false){
 					_elog("Error in local remove");
@@ -217,8 +242,16 @@ public class DropboxFileServerUserNet extends ThreadBase{
 				}	
 			}
 			else if(tmp.equals("-a")){
+				if(st.countTokens() > 2){
+					_elog("Invalid input");
+					return;
+				}
 				String name = st.nextToken();
-				if(_server.addClient(name) == false){
+				String passWord = DropboxConstants.DEFAULT_PWD;
+				if(st.hasMoreTokens()){
+					passWord = st.nextToken();
+				}
+				if(_server.addClient(name, passWord) == false){
 					_elog("Error in local add");
 					// TODO: remove ?
 				}else{
@@ -228,6 +261,25 @@ public class DropboxFileServerUserNet extends ThreadBase{
 						_elog("Not confirmed: dangerous because you have added locally");
 					}
 				}	
+			}
+			else if(tmp.equals("-w")){
+				if(st.countTokens() != 3){
+					_elog("Invalid input");
+					return;
+				}
+				String name = st.nextToken();
+				String oldPassword = st.nextToken();
+				String password = st.nextToken();
+				if(_server.changePassword(name, oldPassword, password)){
+					if(sendChangePassword(name, password)){
+						_log("Change password success.");
+					}else{
+						_elog("Not confiemd: dangerous because you have changed the password locally");
+					}
+				}
+				else{
+					_elog("Failed");
+				}
 			}
 			else {
 				_elog("Invalid input");

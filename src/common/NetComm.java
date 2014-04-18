@@ -28,5 +28,14 @@ public class NetComm{
 		}
 		return from;
 	}
-		
+	
+	/**
+	 * Why synchronized? we don't want other thread preempt when 
+	 * it's waiting for one specified reply
+	 */
+	public static synchronized String sendAndRecv(String str, PrintWriter out, BufferedReader in) throws Exception{
+		send(str, out);
+		String reply = receive(in);
+		return reply;
+	}
 }

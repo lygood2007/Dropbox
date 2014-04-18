@@ -52,8 +52,9 @@ public class MasterServerFileServerRequest extends ThreadBase{
 	
 	protected void sendHeartBeat() throws Exception{
 		// TODO: add more story here
-		NetComm.send(ProtocolConstants.PACK_STR_HEARTBEAT_HEAD,_out);
-		String reply = NetComm.receive(_in);
+		/*NetComm.send(ProtocolConstants.PACK_STR_HEARTBEAT_HEAD,_out);
+		String reply = NetComm.receive(_in);*/
+		String reply = NetComm.sendAndRecv(ProtocolConstants.PACK_STR_HEARTBEAT_HEAD, _out, _in);
 		parse(reply);
 	}
 	

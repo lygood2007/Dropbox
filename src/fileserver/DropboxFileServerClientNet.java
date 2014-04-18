@@ -47,7 +47,7 @@ class DropboxFileServerClientNet{
     			Thread t;
     			
     			// TODO: if the client is firstly connected, should make a new directory for him
-    			t = new Thread(new DropboxFileServerTerminalHandler(client, _server));
+    			t = new Thread(new DropboxFileServerSyncer(client, _server));
     			t.start();
     		}
     	}catch(InterruptedIOException e){

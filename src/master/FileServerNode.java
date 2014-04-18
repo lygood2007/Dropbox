@@ -9,7 +9,7 @@ import java.util.*;
  * Description: Used for storing the connected file servers
  *              CAUTION: this class is not reusable
  */
-class FileServerNode {
+final class FileServerNode {
 	
 	/* immutable */
 	private Socket _userSocket;
@@ -112,6 +112,14 @@ class FileServerNode {
 		_alive = false;
 	}
 	
+	public synchronized boolean changePassword(String name, String password){
+		if(!_mp.containsKey(name)){
+			return false;
+		}else{
+			_mp.put(name, password);
+			return true;
+		}
+	}
 	public synchronized void clear(){
 		
 		if(_fsqNet != null &&!_fsqNet.terminated()){

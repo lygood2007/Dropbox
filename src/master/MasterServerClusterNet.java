@@ -64,9 +64,9 @@ class MasterServerClusterNet extends ThreadBase {
 			}
 			// load all entries
 			while(st.hasMoreTokens()){
-				String key = st.nextToken();
-				String val = st.nextToken();
-				node.addEntry(key, val);
+				String clientName = st.nextToken();
+				String password = st.nextToken();
+				node.addEntry(clientName, password);
 			}
 			node.setID(id);
 			node.setIP(s.getInetAddress().getHostAddress());

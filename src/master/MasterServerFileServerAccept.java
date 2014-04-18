@@ -96,12 +96,12 @@ class MasterServerFileServerAccept extends ThreadBase{
 				_elog("Invalid package");
 				return;
 			}
-			String dir = st.nextToken();
+			String pwd = st.nextToken();
 			if(st.hasMoreTokens()){
 				_elog("Invalid package");
 				return;
 			}
-			_node.addEntry(name, dir);
+			_node.addEntry(name, pwd);
 			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
 		}else if(st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_SET_PRIO_HEAD)){
 			_dlog("I got a set-priority package, now set it");
@@ -121,6 +121,25 @@ class MasterServerFileServerAccept extends ThreadBase{
 			}
 			_node.removeEntry(name);
 			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+		}
+		else if(st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_CHANGE_PWD_HEAD)){
+			_dlog("I got a change-password package, now change it");
+			_dlog(str);
+			String name = st.nextToken();
+			/*if(st.hasMoreTokens()){
+				_elog("Invalid package");
+				return;
+			}*/
+			String pwd = st.nextToken();
+			if(st.hasMoreTokens()){
+				_elog("Invalid package");
+				return;
+			}
+			
+			if(_node.changePassword(name, pwd))
+				NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+			else
+				NetComm.send(ProtocolConstants.PACK_STR_BAD_HEAD, _out);
 		}
 		else{
 			_log(str);

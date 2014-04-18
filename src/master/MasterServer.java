@@ -11,7 +11,7 @@ import java.util.*;
  * Description: The big server! It's mainly responsible for handling dispatching client connection
  *              to a specified file server.
  */
-class MasterServer {
+final class MasterServer {
 
 	private int _clientsPort;
 	private int _clusterPort;
@@ -154,7 +154,7 @@ class MasterServer {
 			Iterator it = mp.entrySet().iterator();
 			while(it.hasNext()){
 				Map.Entry pair = (Map.Entry)it.next();
-				 _log("<Clients name>:" + pair.getKey() + " <Client dir>	:" +pair.getValue()); 
+				 _log("<Clients name>:" + pair.getKey() + " <Client password>:" +pair.getValue()); 
 			}
 			System.out.println();
 			i++;

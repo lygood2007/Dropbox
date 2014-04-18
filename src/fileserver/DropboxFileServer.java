@@ -11,7 +11,7 @@ import java.util.*;
  * Description: The server for syncing files and talking to the master node
  *              , here we simulate the behavior of data storage.
  */
-class DropboxFileServer {
+final class DropboxFileServer {
 
 	private int _port;
 	private boolean _debug; 
@@ -22,11 +22,12 @@ class DropboxFileServer {
 	//private DropboxFileServerMasterNettmp _serverNet;
 	//private DropboxFileServerListenNet _clientNet;
 	private DropboxFileServerMasterNet _masterNet;
-	private Map<String, String> _map;
+	//private Map<String, String> _map;
 	private int _id; // The unique identifier for this file server
 	private int _prio; // The priority of this file server. (1->5)
-		               // The larger it is the higher it will be chosen to be the sync server
+	               // The larger it is the higher it will be chosen to be the sync server
 	private int _maxClientNum;
+	private Map<String, ClientNode> _clients;
 	
 	private void _dlog(String str){
 		if(_debug)
@@ -50,7 +51,7 @@ class DropboxFileServer {
     	_id = id;
     	_prio = prio;
     	_maxClientNum = maxClientNum;
-    	_map = new TreeMap<String, String>();
+    	_clients = new TreeMap<String, ClientNode>();
     	
     	initDisk(_disk);
     	initNet();
@@ -110,9 +111,25 @@ class DropboxFileServer {
     	
     }
     
-    public boolean addClient(String clientName){
+    public boolean changePassword(String name, String oldPassword, String password){
+    	if(!_clients.containsKey(name))
+    		return false;
+    	else
+    	{
+    		ClientNode cn = _clients.get(name);
+    		if(!cn.match(name, oldPassword)){
+    			_elog("Your old password is not correct");
+    			return false;
+    		}else{
+    			cn.setPassword(password);
+    			return true;
+    		}
+    	}
+    }
+    
+    public boolean addClient(String clientName, String password){
     	assert _disk != null;
-    	if(_map.containsKey(clientName)){
+    	if(_clients.containsKey(clientName)){
     		_elog("Client already exist");
     		return false;
     	}
@@ -126,7 +143,8 @@ class DropboxFileServer {
 
     		if(result) {    
     			_log(newDir + " created.");  
-    			_map.put(clientName, fullpath);
+    			ClientNode cn = new ClientNode(clientName, fullpath, password);
+    			_clients.put(clientName, cn);
     		}
     		else{
     			_elog("Cannot create the directory");
@@ -143,20 +161,15 @@ class DropboxFileServer {
     }
     
     public boolean removeClient(String clientName){
-    	if(!_map.containsKey(clientName)){
+    	if(!_clients.containsKey(clientName)){
     		return false;
     	}else
     	{
+    		ClientNode cn = _clients.get(clientName);
+    		boolean success = cn.clear();
     		// remove the file
-    		File tmp = new File(_map.get(clientName));
-    		if(!tmp.delete()){
-    			return false;
-    		}
-    		else
-    		{
-    			_map.remove(clientName);
-    			return true;
-    		}
+    		return success;
+    		
     	}
     }
     
@@ -168,14 +181,19 @@ class DropboxFileServer {
     	_log("Hide Exception:" + _hideException);
     	_log("Priority:" + _prio);
     	_log("Max Client Num:" + _maxClientNum);
-    	_log("Current Client Num:" + _map.size());
+    	_log("Current Client Num:" + _clients.size());
     	_log("Root disk:" + _disk);
     	_log("Listen port:" + _port);
-    	Map<String, String> mp = _map;
+    	Map<String, ClientNode> mp = _clients;
 		Iterator it = mp.entrySet().iterator();
 		while(it.hasNext()){
 			Map.Entry pair = (Map.Entry)it.next();
-			 _log("<Clients name>:" + pair.getKey() + " <Client dir>	:" +pair.getValue()); 
+			String name = (String)pair.getKey();
+			ClientNode node = (ClientNode)pair.getValue();
+			 _log("<Clients name>:" + name + " <Client dir>:"
+			+ node.getDir() +" <Syncers>:" 
+			+ node.getNumSyncer() + " <Password>:"
+			+ node.getPassword()); 
 		}
     	System.out.println();
     }
@@ -222,8 +240,8 @@ class DropboxFileServer {
     	return _disk;
     }
     
-    public Map<String, String> getMap(){
-    	return _map;
+    public Map<String, ClientNode> getClients(){
+    	return _clients;
     }
     
     public int getID(){
@@ -243,7 +261,7 @@ class DropboxFileServer {
     }
     
     public int getCurClientNum(){
-    	return _map.size();
+    	return _clients.size();
     }
     
     public static void main(String[] args) {

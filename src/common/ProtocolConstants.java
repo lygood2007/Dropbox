@@ -27,4 +27,6 @@ public interface ProtocolConstants {
 	final static String PACK_STR_REMOVE_CLIENT_HEAD = "RMV";
 	final static String PACK_STR_ID_HEAD = "IDF";
 	final static String PACK_STR_USR_HEAD = "USR";
+	final static String PACK_STR_CHANGE_PWD_HEAD = "PWD";
+	final static String PACK_STR_BAD_HEAD = "BAD";
 }
