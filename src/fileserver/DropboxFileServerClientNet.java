@@ -18,9 +18,8 @@ class DropboxFileServerClientNet{
 			System.out.println("[DropboxFileServerClientNet (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[DropboxFileServerClientNet (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[DropboxFileServerClientNet (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -48,17 +47,21 @@ class DropboxFileServerClientNet{
     			Thread t;
     			
     			// TODO: if the client is firstly connected, should make a new directory for him
-    			t = new Thread(new DropboxFileServerClientHandler(client, _server));
+    			t = new Thread(new DropboxFileServerTerminalHandler(client, _server));
     			t.start();
     		}
     	}catch(InterruptedIOException e){
-    		_elog(e.toString());
+    		if(!_server.noException()){
+				_elog(e.toString());
+			}
     		if(_server.debugMode()){
     			e.printStackTrace();
     		}
     		
     	}catch(IOException e){
-    		_elog(e.toString());
+    		if(!_server.noException()){
+				_elog(e.toString());
+			}
     		if(_server.debugMode()){
     			e.printStackTrace();
     		}
@@ -70,7 +73,9 @@ class DropboxFileServerClientNet{
     			if( client != null )
     				client.close();
     		}catch(IOException e){
-    			_elog(e.toString());
+    			if(!_server.noException()){
+    				_elog(e.toString());
+    			}
         		if(_server.debugMode()){
         			e.printStackTrace();
         		}

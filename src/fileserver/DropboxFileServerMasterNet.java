@@ -34,9 +34,8 @@ class DropboxFileServerMasterNet {
 			System.out.println("[DropboxFileServerMasterNet (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[DropboxFileServerMasterNet (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[DropboxFileServerMasterNet (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -82,7 +81,9 @@ class DropboxFileServerMasterNet {
 				_dlog(line);
 				parse(line);
 			}catch(Exception e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				break;
 				// Break the loop
 			}
@@ -99,7 +100,7 @@ class DropboxFileServerMasterNet {
 		String tkn = st.nextToken();
 		try{
 			if(tkn.equals(ProtocolConstants.PACK_STR_HEARTBEAT_HEAD)){
-				_log("I got heartbeat");
+				_dlog("I got heartbeat");
 				// Send back confirmation
 				// TODO: add more story here
 				NetComm.send(ProtocolConstants.PACK_STR_HEARTBEAT_HEAD,_out);
@@ -109,7 +110,9 @@ class DropboxFileServerMasterNet {
 				_elog("Invalid header, skip.");
 			}
 		}catch(Exception e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
@@ -151,19 +154,25 @@ class DropboxFileServerMasterNet {
 			_userIn = new BufferedReader(new InputStreamReader(_userSock.getInputStream()));
 			sendUserID();
 		}catch(UnknownHostException e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
 			connected = false;
 		}catch(IOException e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
 			connected = false;
 		}catch(Exception e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
@@ -191,7 +200,9 @@ class DropboxFileServerMasterNet {
 			}
 		}
 		catch(Exception e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			connected = false;
 		}
 		if(!connected){
@@ -226,7 +237,9 @@ class DropboxFileServerMasterNet {
 				_out = null;
 				_dlog("Success!");
 			}catch(IOException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
@@ -259,7 +272,9 @@ class DropboxFileServerMasterNet {
 				_userOut = null;
 				_dlog("Success!");
 			}catch(IOException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}

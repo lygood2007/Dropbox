@@ -22,9 +22,8 @@ public class MasterServerFileServerRequest extends ThreadBase{
 			System.out.println("[MasterServerFileServerRequest (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[MasterServerFileServerRequest (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServerFileServerRequest (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -72,12 +71,16 @@ public class MasterServerFileServerRequest extends ThreadBase{
 				sendHeartBeat();
 			}
 		}catch(InterruptedException e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
 		}catch(Exception e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
@@ -115,7 +118,9 @@ public class MasterServerFileServerRequest extends ThreadBase{
 			_out = null;
 
 		}catch(IOException e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode())
 				e.printStackTrace();
 		}

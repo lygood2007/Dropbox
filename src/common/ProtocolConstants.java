@@ -23,6 +23,8 @@ public interface ProtocolConstants {
 	final static String PACK_STR_CLOSE_HEAD = "CLS";
 	final static String PACK_STR_REQUEST_MS_HEAD = "RMS";
 	final static String PACK_STR_SET_PRIO_HEAD = "SPR";
+	final static String PACK_STR_ADD_CLIENT_HEAD = "ADD";
+	final static String PACK_STR_REMOVE_CLIENT_HEAD = "RMV";
 	final static String PACK_STR_ID_HEAD = "IDF";
 	final static String PACK_STR_USR_HEAD = "USR";
 }

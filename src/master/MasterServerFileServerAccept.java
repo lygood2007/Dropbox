@@ -1,6 +1,7 @@
 package master;
 
 import java.net.*;
+import java.util.StringTokenizer;
 import java.io.*;
 
 import common.*;
@@ -23,9 +24,8 @@ class MasterServerFileServerAccept extends ThreadBase{
 			System.out.println("[MasterServerFileServerAccept (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[MasterServerFileServerAccept (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServerFileServerAccept (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -57,7 +57,9 @@ class MasterServerFileServerAccept extends ThreadBase{
 				parse(message);
 			}
 		}catch(Exception e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
@@ -66,14 +68,63 @@ class MasterServerFileServerAccept extends ThreadBase{
 		_log(_threadName + " is stopped");
 	}
 	
-	protected void parse(String str){
-		if(str.equals(ProtocolConstants.PACK_STR_CLOSE_HEAD)){
+	protected void sendCurrentStatus() throws Exception{
+		// TODO: No package header, safe or not
+		String str = "There are " + (_server.getFS().size()-1) + " file servers like you are connected";
+		NetComm.send(str, _out);
+	}
+	
+	protected void parse(String str) throws Exception{
+		StringTokenizer st = new StringTokenizer(str);
+		String tkn = st.nextToken();
+		if(!st.hasMoreTokens()&&tkn.equals(ProtocolConstants.PACK_STR_CLOSE_HEAD)){
 			_dlog("I got a close package, now close");
 			
 			_node.destroy(); // Will stop myself too
+			_server.removeDead(_node);
 			// Cancel the other thread
-		}else{
-			_elog("Invalid message");
+		}else if(!st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_REQUEST_FS_HEAD)){
+			_dlog("I got a request package, now send back request");
+			// TODO: For now it just send back how many file servers connected
+			//       we cannot provide the information to details to file server
+			sendCurrentStatus();
+		}
+		else if(st.hasMoreTokens()&&tkn.equals(ProtocolConstants.PACK_STR_ADD_CLIENT_HEAD)){
+			_dlog("I got a add-client package, now add it");
+			String name = st.nextToken();
+			if(!st.hasMoreTokens()){
+				_elog("Invalid package");
+				return;
+			}
+			String dir = st.nextToken();
+			if(st.hasMoreTokens()){
+				_elog("Invalid package");
+				return;
+			}
+			_node.addEntry(name, dir);
+			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+		}else if(st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_SET_PRIO_HEAD)){
+			_dlog("I got a set-priority package, now set it");
+			String num = st.nextToken();
+			if(st.hasMoreTokens()){
+				_elog("Invalid package");
+				return;
+			}
+			_node.setPriority(Integer.parseInt(num));
+			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+		}else if(st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_REMOVE_CLIENT_HEAD)){
+			_dlog("I got a remove-client package, now remove it");
+			String name = st.nextToken();
+			if(st.hasMoreTokens()){
+				_elog("Invalid package");
+				return;
+			}
+			_node.removeEntry(name);
+			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+		}
+		else{
+			_log(str);
+			_elog("Invalid package");
 		}
 	}
 	
@@ -97,7 +148,9 @@ class MasterServerFileServerAccept extends ThreadBase{
 			_out = null;
 
 		}catch(IOException e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode())
 				e.printStackTrace();
 		}

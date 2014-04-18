@@ -28,9 +28,8 @@ class MasterServer {
 			System.out.println("[MasterServer (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_hideException)
-			System.err.println("[MasterServer (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServer (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -58,7 +57,7 @@ class MasterServer {
 	
 	private void initTimer(){
 		_timer = new Timer();
-		_timer.scheduleAtFixedRate(new Echo(this), 1000, 1000);
+		_timer.scheduleAtFixedRate(new Echo(this), 2000, 2000);
 	}
 	
 	public void run(){
@@ -82,7 +81,7 @@ class MasterServer {
 		_log("-u: to use user interface (default false)");
 		_log("-cp: to specify the listen port for clients (default " + DropboxConstants.MASTER_CLIENT_PORT+")");
 		_log("-lp: to specify the listen port for cluster (default " + DropboxConstants.MASTER_CLUSTER_PORT+")");
-    	_log("-he: to hide non-runtime exceptions' reports");
+    	_log("-e: to hide non-runtime exceptions' reports");
 		System.out.println();
 	}
 	
@@ -150,12 +149,26 @@ class MasterServer {
 			_log("IP:" + fsn.getIP());
 			_log("MAX CLIENTS:" + fsn.getMaxClients());
 			_log("PRIO:" + fsn.getPriority());
+			_log("CONNECTED CLIENTS:"+fsn.getNumClients());
+			Map<String, String> mp = fsn.getMap();
+			Iterator it = mp.entrySet().iterator();
+			while(it.hasNext()){
+				Map.Entry pair = (Map.Entry)it.next();
+				 _log("<Clients name>:" + pair.getKey() + " <Client dir>	:" +pair.getValue()); 
+			}
 			System.out.println();
 			i++;
 		}
 	}
 	
-	public void garbageCollection(){
+	public synchronized void removeDead(FileServerNode fs){
+		assert fs.isAlive() == false;
+		_fsnodes.remove(fs);
+		_log("Remove fileserver " + fs.getID());
+		printFileServers();
+	}
+	
+	public synchronized void garbageCollection(){
 		_dlog("Run garbage collection");
 		/* Need to use iterator to loop */
 		Iterator<FileServerNode> it = _fsnodes.iterator();
@@ -212,7 +225,7 @@ class MasterServer {
 			else if(args[i].equals("-lp")){
 				i++;
 				clusterPort = Integer.parseInt(args[i]);
-			}else if(args[i].equals("-he")){
+			}else if(args[i].equals("-e")){
 				hideException = true;
 			}
     	}

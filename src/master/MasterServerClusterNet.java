@@ -20,9 +20,8 @@ class MasterServerClusterNet extends ThreadBase {
 			System.out.println("[MasterServerClusterNet (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[MasterServerClusterNet (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServerClusterNet (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -85,7 +84,9 @@ class MasterServerClusterNet extends ThreadBase {
 				node.setRequestThread(fsq);
 				fsq.start();
 			}catch(IOException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode())
 					e.printStackTrace();
 				
@@ -99,8 +100,7 @@ class MasterServerClusterNet extends ThreadBase {
 			if(node == null){
 				node = new FileServerNode();
 				_server.insertFileServer(node);
-			}
-			
+			}	
 			try
 			{
 				BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -110,7 +110,9 @@ class MasterServerClusterNet extends ThreadBase {
 				node.setAcceptThread(fsa);
 				fsa.start();
 			}catch(IOException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
@@ -150,7 +152,9 @@ class MasterServerClusterNet extends ThreadBase {
 					}
 				}
 			}catch(InterruptedException e){ // Cancel point
-
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode())
 					e.printStackTrace();
 				break;
@@ -184,24 +188,32 @@ class MasterServerClusterNet extends ThreadBase {
 					//}
 				}
 			}catch(InterruptedException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
 			}catch(InterruptedIOException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
 				// exit
 			}catch(IOException e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
 				// exit
 			}catch(Exception e){
-				_elog(e.toString());
+				if(!_server.noException()){
+					_elog(e.toString());
+				}
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
@@ -212,7 +224,9 @@ class MasterServerClusterNet extends ThreadBase {
 					if(_serverSocket != null )
 						_serverSocket.close();
 				}catch(IOException e){
-					_elog(e.toString());
+					if(!_server.noException()){
+						_elog(e.toString());
+					}
 					if(_server.debugMode()){
 						e.printStackTrace();
 					}

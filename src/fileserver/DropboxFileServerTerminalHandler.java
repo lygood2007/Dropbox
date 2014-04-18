@@ -11,12 +11,12 @@ import common.*;
  * 
  * 
  * Class: DropboxFileCliendHandler
- * Description: Handle the client connected, basically about network issue.
+ * Description: Handle the client connected, do SYNCING!
+ *              CAUTION: this class should be paid more attention.
  */
-class DropboxFileServerClientHandler implements Runnable{
+class DropboxFileServerTerminalHandler implements Runnable{
 	
 	private Socket _sock;
-	
 	private SyncStreamParser _sp;
 	private DropboxFileManager _fm;
 	private SyncStreamWriter _sw;
@@ -26,16 +26,15 @@ class DropboxFileServerClientHandler implements Runnable{
 			System.out.println("[DropboxFileServerClientHandler (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[DropboxFileServerClientHandler (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[DropboxFileServerClientHandler (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
 		System.out.println("[DropboxFileServerClientHandler]:" + str);
 	}
 	
-	public DropboxFileServerClientHandler(Socket sock,DropboxFileServer server){
+	public DropboxFileServerTerminalHandler(Socket sock,DropboxFileServer server){
 		_sock = sock;
 		_server = server;
 		assert _server != null;
@@ -45,7 +44,9 @@ class DropboxFileServerClientHandler implements Runnable{
 			_sw = new SyncStreamWriter(_fm.getHome(),new DataOutputStream(_sock.getOutputStream()), _server.debugMode());
 			
 		}catch(IOException e){
-			_elog("IO error occurs when you get input stream from socket");
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode())
 				e.printStackTrace();
 		}
@@ -71,7 +72,9 @@ class DropboxFileServerClientHandler implements Runnable{
 					try{
 						_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
 					}catch(IOException e){
-						_elog("Error occurs when writing data header");
+						if(!_server.noException()){
+							_elog(e.toString());
+						}
 						if(_server.debugMode())
 							e.printStackTrace();
 					}
@@ -97,7 +100,9 @@ class DropboxFileServerClientHandler implements Runnable{
 					try{
 					_sock.close();
 					}catch(IOException e){
-						_elog("Close socket");
+						if(!_server.noException()){
+							_elog(e.toString());
+						}
 						if(_server.debugMode())
 							e.printStackTrace();
 					}
@@ -114,7 +119,9 @@ class DropboxFileServerClientHandler implements Runnable{
     	try{
     		_sw.writePackageHeader(ProtocolConstants.PACK_DATA_HEAD);
     	}catch(IOException e){
-    		_dlog("Error occurs when writing data header");
+    		if(!_server.noException()){
+				_elog(e.toString());
+			}
     		if(_server.debugMode())
     			e.printStackTrace();
     	}
@@ -125,7 +132,9 @@ class DropboxFileServerClientHandler implements Runnable{
 		try{
 			_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
 		}catch(IOException e){
-			_elog("Error occurs when dispatching null header");
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode())
 				e.printStackTrace();
 		}

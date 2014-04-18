@@ -91,12 +91,20 @@ class FileServerNode {
 		return _alive;
 	}
 	
+	public Map<String, String> getMap(){
+		return _mp;
+	}
+	
 	public synchronized void clearMap(){
 		_mp.clear();
 	}
 	
 	public synchronized void addEntry(String key, String val){	
 		_mp.put(key, val);
+	}
+	
+	public synchronized void removeEntry(String key){
+		_mp.remove(key);
 	}
 	
 	public synchronized void destroy(){
@@ -106,10 +114,10 @@ class FileServerNode {
 	
 	public synchronized void clear(){
 		
-		if(!_fsqNet.terminated()){
+		if(_fsqNet != null &&!_fsqNet.terminated()){
 			_fsqNet.stop();
 		}
-		if(!_fsaNet.terminated()){
+		if(_fsaNet != null &&!_fsaNet.terminated()){
 			_fsaNet.stop();
 		}
 		try

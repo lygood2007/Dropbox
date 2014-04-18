@@ -19,9 +19,8 @@ class MasterServerClientNet{
 			System.out.println("[MasterServerClientsNet (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[MasterServerClientsNet (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServerClientsNet (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -92,13 +91,17 @@ class MasterServerClientNet{
     			_threads.add(t);
     		}
     	}catch(InterruptedIOException e){
-    		_elog(e.toString());
+    		if(!_server.noException()){
+				_elog(e.toString());
+			}
     		if(_server.debugMode()){
     			e.printStackTrace();
     		}
     		
     	}catch(IOException e){
-    		_elog(e.toString());
+    		if(!_server.noException()){
+				_elog(e.toString());
+			}
     		if(_server.debugMode()){
     			e.printStackTrace();
     		}
@@ -110,7 +113,9 @@ class MasterServerClientNet{
     			if( client != null )
     				client.close();
     		}catch(IOException e){
-    			_elog(e.toString());
+    			if(!_server.noException()){
+    				_elog(e.toString());
+    			}
         		if(_server.debugMode()){
         			e.printStackTrace();
         		}

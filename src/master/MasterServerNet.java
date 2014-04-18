@@ -18,9 +18,8 @@ class MasterServerNet {
 			System.out.println("[MasterServerNet (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[MasterServerNet (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServerNet (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){

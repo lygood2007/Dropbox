@@ -16,9 +16,8 @@ class MasterServerClientHandler implements Runnable{
 			System.out.println("[MasterServerClientHandler (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[MasterServerClientHandler (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[MasterServerClientHandler (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){

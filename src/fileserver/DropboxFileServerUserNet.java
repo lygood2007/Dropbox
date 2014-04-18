@@ -17,9 +17,8 @@ public class DropboxFileServerUserNet extends ThreadBase{
 			System.out.println("[DropboxFileServerUserNet (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_server.noException())
-			System.err.println("[DropboxFileServerUserNet (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[DropboxFileServerUserNet (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -51,7 +50,9 @@ public class DropboxFileServerUserNet extends ThreadBase{
 			_out = null;
 			
 		}catch(IOException e){
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
@@ -67,7 +68,6 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		try
 		{
 			while(!_sock.isClosed() && thisThread == _t){ //Cancel point
-				//Thread.sleep(100);
 				synchronized(this) {
 					while(_suspended) { // Suspension point
 						wait();
@@ -76,15 +76,18 @@ public class DropboxFileServerUserNet extends ThreadBase{
 				System.out.println("Your input:");
 				String s = in.nextLine();// Read from user input
 				parse(s);
-				NetComm.send(s,_out);
 			}
 		}catch(InterruptedException e){ // Cancel point
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
 		}catch(Exception e){ // Always last
-			_elog(e.toString());
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
 			if(_server.debugMode()){
 				e.printStackTrace();
 			}
@@ -111,20 +114,64 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		NetComm.send(ProtocolConstants.PACK_STR_CLOSE_HEAD, _out);
 	}
 	
+	protected boolean sendAdd(String name) throws Exception{
+		String dir = _server.getMap().get(name);
+		assert dir != null;
+		
+		String str = ProtocolConstants.PACK_STR_ADD_CLIENT_HEAD;
+		str = str + " " + name + " " + dir;
+		NetComm.send(str, _out);
+		if(NetComm.receive(_in).equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
+	protected boolean sendRemove(String name) throws Exception{
+		String str = ProtocolConstants.PACK_STR_REMOVE_CLIENT_HEAD;
+		str = str + " " + name;
+		NetComm.send(str, _out);
+		if(NetComm.receive(_in).equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
+	protected boolean sendPriority() throws Exception{
+		String str = ProtocolConstants.PACK_STR_SET_PRIO_HEAD;
+		str = str + " " + _server.getPrio();
+		NetComm.send(str, _out);
+		//_dlog("sended");
+		if(NetComm.receive(_in).equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
+			//_dlog("confirmed");
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
+	protected void sendRequest() throws Exception {
+		String str = ProtocolConstants.PACK_STR_REQUEST_FS_HEAD;
+		NetComm.send(str, _out);
+		String masterStatus = NetComm.receive(_in);
+		_log(masterStatus);
+	}
+	
 	protected void parse(String str) throws Exception{
 		StringTokenizer st = new StringTokenizer(str);
 		if(st.countTokens() == 1){
 			if(str.equals("-q")){
 				// request the master's status
+				sendRequest();
 			}else if(str.equals("-s")){
 				// Shut down the server brutally
 				System.exit(0);
 			}
 			else if(str.equals("-z")){
-				
 				sendClose();
 				stop();
-				
 			}else if(str.equals("-h")){
 				usage();
 			}else if(str.equals("-d")){
@@ -140,24 +187,47 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		else if(st.countTokens() == 2){
 			String tmp = st.nextToken();
 			if(tmp.equals("-p")){
-				_server.setPrio(Integer.parseInt(st.nextToken()));
-				_server.printStatus();
+				int prio = Integer.parseInt(st.nextToken());
+				if(prio < DropboxConstants.MIN_PRIO){
+					_elog("Priority is too small");
+					return;
+				}else if(prio > DropboxConstants.MAX_PRIO){
+					_elog("Priority is too large");
+					return;
+				}
+				_server.setPrio(prio);
+				if(sendPriority() == true){
+					if(_server.debugMode())
+						_server.printStatus();
+				}else{
+					_elog("Not confirmed, dangerous because you have changed the priority locally");
+				}
 			}
 			else if(tmp.equals("-r")){
-				if(_server.removeClient(st.nextToken()) == true){
-					_elog("Error in remove");
+				String name = st.nextToken();
+				if(_server.removeClient(name) == false){
+					_elog("Error in local remove");
+					// TODO: add ?
 				}else{
-					_log("Success!");
-				}
+					if(sendRemove(name) == true){
+						_log("Success");
+					}else{
+						_elog("Not confirmed: dangerous because you have removed locally");
+					}
+				}	
 			}
 			else if(tmp.equals("-a")){
-				if(_server.addClient(st.nextToken()) == false){
-					//TODO: should return to the client and tell him the failure
-					//      normally it will always succeed
-					_elog("Error in add");
+				String name = st.nextToken();
+				if(_server.addClient(name) == false){
+					_elog("Error in local add");
+					// TODO: remove ?
 				}else{
-					_log("Success");
-				}
+					if(sendAdd(name) == true){
+						_log("Success");
+					}else{
+						_elog("Not confirmed: dangerous because you have added locally");
+					}
+				}	
 			}
 			else {
 				_elog("Invalid input");

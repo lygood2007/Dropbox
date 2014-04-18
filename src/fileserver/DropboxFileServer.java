@@ -33,9 +33,8 @@ class DropboxFileServer {
 			System.out.println("[DropboxFileServer (DEBUG)]:" + str);
 	}
 	
-	private void _elog(String str){
-		if(!_hideException)
-			System.err.println("[DropboxFileServer (ERROR)]:" + str);
+	private static void _elog(String str){
+		System.err.println("[DropboxFileServer (ERROR)]:" + str);
 	}
 	
 	private static void _log(String str){
@@ -135,6 +134,9 @@ class DropboxFileServer {
     			//System.exit(1);
     			return false;
     		}
+    	}else{
+    		_elog("The name is used");
+    		return false;
     	}
     	_dlog("Client root: " + _disk);
     	return true;
