@@ -16,7 +16,6 @@ public class SyncStreamWriter {
 	private boolean _debug;
 	private DataOutputStream _os;
 	private String _home;
-	private Data
 	
 	private void _dlog(String str){
 		if(_debug)
