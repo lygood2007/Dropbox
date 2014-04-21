@@ -1,4 +1,4 @@
-package layout;
+package client_layout;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -60,7 +60,7 @@ public class LoginView extends JFrame{
         _loginButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-            	// TO DO
+            	// TODO
             }
         });
 		
@@ -71,7 +71,7 @@ public class LoginView extends JFrame{
         _registerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-            	// TO DO
+            	// TODO
             }
         });
 	}

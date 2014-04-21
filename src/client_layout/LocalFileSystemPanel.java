@@ -1,4 +1,4 @@
-package layout;
+package client_layout;
 
 import java.awt.Component;
 import java.awt.Desktop;
@@ -22,14 +22,14 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-
+import client.DropboxClient;
 /*
  * local file system panel
  */
 @SuppressWarnings("serial")
 public class LocalFileSystemPanel extends JPanel{
-	private String _currentpath = System.getProperty("user.dir");
-	private String _rootpath = "C:\\";
+	private String _currentpath;
+	private String _rootpath;
 	private ArrayList<File> _files = new ArrayList<File>();
 	private ArrayList<File> _dirs = new ArrayList<File>();
 	
@@ -44,12 +44,13 @@ public class LocalFileSystemPanel extends JPanel{
 	private JMenuItem _helpMenuItem = new JMenuItem("help");
 	private JMenuItem _aboutMenuItem = new JMenuItem("about");
 	private JLabel _pathlabel = new JLabel("path:");
-	private JTable _myfiletable;// FileTable to be implemented
+	private JTable _filetable;// FileTable to be implemented
 	private FileTable _tablemodel = new FileTable();
+	private DropboxClient _client;
 	
-	
-	public LocalFileSystemPanel(){
+	public LocalFileSystemPanel(DropboxClient client){
 	    try {
+	    	_client = client;
 	        init();
 	      }
 	      catch(Exception ex) {
@@ -58,7 +59,27 @@ public class LocalFileSystemPanel extends JPanel{
 	}
 	
 	void init() throws Exception {
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		assert _client != null;
+		_currentpath = _client.getClientRoot();
+		_rootpath = "/"; // HOW TO DEAL WITH THIS in different platform!!
+		
+		_files = new ArrayList<File>();
+		_dirs = new ArrayList<File>();
+		
+		_filesystem = new JLabel("Local File System");
+		_menubar = new JMenuBar();
+		_viewmenu = new JMenu("view");
+		_settingmenu = new JMenu("setting");
+		_helpmenu = new JMenu("help");
+		_detailMenuItem = new JMenuItem("detail");
+		_iconMenuItem = new JMenuItem("icon");
+		_loginMenuItem = new JMenuItem("login");
+		_helpMenuItem = new JMenuItem("help");
+		_aboutMenuItem = new JMenuItem("about");
+		_pathlabel = new JLabel("path:");
+		_tablemodel = new FileTable();
+		
+		this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         this.setAlignmentX(Component.LEFT_ALIGNMENT);
         this.add(_filesystem);
         _filesystem.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -95,7 +116,7 @@ public class LocalFileSystemPanel extends JPanel{
         });
         
         // generate file table
-        _myfiletable = new JTable(_tablemodel);
+        _filetable = new JTable(_tablemodel);
         
         _tablemodel.addColumn("name");
         _tablemodel.addColumn("size");
@@ -124,7 +145,7 @@ public class LocalFileSystemPanel extends JPanel{
         	if(!_currentpath.equals(_rootpath))
         		_tablemodel.addRow(new Object[]{"..","","","yes"});        	
         }
-        _myfiletable.addMouseListener(new TableListener());
+        _filetable.addMouseListener(new TableListener());
         
         this.add(_menubar);
         _menubar.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -132,7 +153,7 @@ public class LocalFileSystemPanel extends JPanel{
         this.add(_pathlabel);
         _pathlabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JScrollPane scrollPane = new JScrollPane(_myfiletable);
+        JScrollPane scrollPane = new JScrollPane(_filetable);
         
         //Add the scroll pane to this panel.
         this.add(scrollPane);
@@ -179,37 +200,37 @@ public class LocalFileSystemPanel extends JPanel{
 	
 
 	class TableListener extends MouseAdapter{
-		   public void mouseClicked(MouseEvent e) {
-			      if (e.getClickCount() == 2) {
-			         JTable target = (JTable)e.getSource();
-			         int row = target.getSelectedRow();
-			         String currentfile = target.getModel().getValueAt(row, 0).toString();
-			         File c_file = new File(_currentpath);
-			         if (currentfile.equals("..")){
-			        	 setCurrentPath(c_file.getParent());
-			        	 updateTable();
-			        	 return;
-			         }
-			         String targetabsolutepath = _currentpath + "\\" + currentfile;
-			         File t_file = new File(targetabsolutepath);
-			         if (t_file.isDirectory()){
-			        	 setCurrentPath(targetabsolutepath);
-			        	 updateTable();
-			        	 return;
-			         }
-			         else{
-			        	 //the user choose a file, open with default program
-			        	  if (Desktop.isDesktopSupported()) {
-			        		  try{
-			        			  Desktop.getDesktop().open(t_file);
-			        		  }
-			        		  catch(IOException ex){
-			        			  ex.printStackTrace();
-			        		  }
-			        	  }
-			         }
-			   }
-		   }
+		public void mouseClicked(MouseEvent e) {
+			if (e.getClickCount() == 2) {
+				JTable target = (JTable)e.getSource();
+				int row = target.getSelectedRow();
+				String currentfile = target.getModel().getValueAt(row, 0).toString();
+				File c_file = new File(_currentpath);
+				if (currentfile.equals("..")){
+					setCurrentPath(c_file.getParent());
+					updateTable();
+					return;
+				}
+				String targetabsolutepath = _currentpath + System.getProperty("file.separator") + currentfile;
+				File t_file = new File(targetabsolutepath);
+				if (t_file.isDirectory()){
+					setCurrentPath(targetabsolutepath);
+					updateTable();
+					return;
+				}
+				else{
+					//the user choose a file, open with default program
+					if (Desktop.isDesktopSupported()) {
+						try{
+							Desktop.getDesktop().open(t_file);
+						}
+						catch(IOException ex){
+							ex.printStackTrace();
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

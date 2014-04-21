@@ -2,10 +2,14 @@ package client;
 
 import common.*;
 
+import java.awt.EventQueue;
 import java.io.*;
 import java.util.*;
 
+import javax.swing.UIManager;
+
 import utils.*;
+import client_layout.*;
 
 /**
  * Package: client
@@ -15,8 +19,8 @@ import utils.*;
 public class DropboxClient {
 
 	private boolean _debug;
-	private boolean _useUI;
 	private boolean _hideException;
+	private boolean _useUI;
 	
 	private SyncStreamWriter _sw;
 	private SyncStreamParser _sp;
@@ -29,6 +33,8 @@ public class DropboxClient {
 	
 	private String _masterIP = DropboxConstants.MASTER_IP;
 	private int _masterPort = DropboxConstants.MASTER_CLIENT_PORT;
+	//private Thread _main;
+	private DropboxLayout _layout; // UI stuff
 	
 	private void _dlog(String str){
 		if(_debug)
@@ -239,7 +245,7 @@ public class DropboxClient {
     public void printStatus(){
     	_log("**Dropbox Client configuration:");
     	_log("Debug:" + _debug);
-    	_log("UseUI:" + _useUI);
+    	_log("Use UI:" + _useUI);
     	_log("Hide Exception:" + _hideException);
     	_log("Name:" + _name);
     	_log("Password:" + _password);
@@ -288,6 +294,24 @@ public class DropboxClient {
     	_dlog("Disk home: " + home);
     }
     
+    private void initUI(){
+    	try{
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		}
+		catch (Exception e){
+			if(!_hideException){
+				_elog(e.toString());
+			}
+			if(_debug)
+				e.printStackTrace();
+		}
+		_layout = new DropboxLayout(this);
+		EventQueue.invokeLater(new Runnable(){
+			public void run() {
+			}
+		});
+    }
+    
     public boolean debugMode(){
     	return _debug;
     }
@@ -312,15 +336,26 @@ public class DropboxClient {
     	return _password;
     }
     
+    public String getRoot(){
+    	return _root;
+    }
+    
+    public String getClientRoot(){
+    	return _root + System.getProperty("file.separator") + _name;
+    }
+    
     public DropboxClient(boolean debug, boolean useUI, boolean hideException, String name, String password){
     	_debug = debug;
-    	_useUI = useUI;
     	_hideException = hideException;
     	_name = name;
     	_password = password;
+    	_useUI = useUI;
     	_net = new DropboxClientNet(this);
     	initRoot(DropboxConstants.CLIENT_ROOT);
     	initHome(_name);
+    	if(_useUI){
+    		initUI();
+    	}
     	printStatus();
     }
     

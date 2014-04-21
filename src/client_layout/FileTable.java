@@ -1,4 +1,4 @@
-package layout;
+package client_layout;
 
 import javax.swing.table.DefaultTableModel;
 
