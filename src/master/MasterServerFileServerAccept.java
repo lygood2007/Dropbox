@@ -17,7 +17,7 @@ class MasterServerFileServerAccept extends ThreadBase{
 	private BufferedReader _in;
 	private PrintWriter _out;
 	private MasterServer _server;
-	private volatile FileServerNode _node;
+	private FileServerNode _node;
 	
 	private void _dlog(String str){
 		if(_server.debugMode())
@@ -47,7 +47,7 @@ class MasterServerFileServerAccept extends ThreadBase{
 	public void run(){
 		Thread thisThread = Thread.currentThread();
 		try{
-			while(thisThread == _t){ // Cancel point
+			while(_sock != null && !_sock.isClosed() && thisThread == _t){ // Cancel point
 				synchronized (this){
 					while(_suspended){ // Suspension point
 						wait();
@@ -81,12 +81,14 @@ class MasterServerFileServerAccept extends ThreadBase{
 			_dlog("I got a close package, now close");
 			
 			_node.destroy(); // Will stop myself too
-			_server.removeDead(_node);
+			//stop();
+			//_server.removeDead(_node);
 			// Cancel the other thread
 		}else if(!st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_REQUEST_FS_HEAD)){
 			_dlog("I got a request package, now send back request");
 			// TODO: For now it just send back how many file servers connected
-			//       we cannot provide the information to details to file server
+			//       We cannot provide the information to details to file server
+			//       Need to think more.
 			sendCurrentStatus();
 		}
 		else if(st.hasMoreTokens()&&tkn.equals(ProtocolConstants.PACK_STR_ADD_CLIENT_HEAD)){
@@ -101,8 +103,14 @@ class MasterServerFileServerAccept extends ThreadBase{
 				_elog("Invalid package");
 				return;
 			}
-			_node.addEntry(name, pwd);
-			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+			// If the result is false it means we have a conflict when adding client
+			boolean result = _server.addClient(name, pwd, _node);
+			
+			if(result)
+				NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+			else
+				NetComm.send(ProtocolConstants.PACK_STR_ERRMES_HEAD + " "
+						+ "Conflict in adding client, the client name already exists!", _out);
 		}else if(st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_SET_PRIO_HEAD)){
 			_dlog("I got a set-priority package, now set it");
 			String num = st.nextToken();
@@ -119,24 +127,25 @@ class MasterServerFileServerAccept extends ThreadBase{
 				_elog("Invalid package");
 				return;
 			}
-			_node.removeEntry(name);
-			NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+			boolean result = _server.removeClient(name);
+			
+			if(result)
+				NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
+			else
+				NetComm.send(ProtocolConstants.PACK_STR_ERRMES_HEAD + " "
+						+ "Error in removing client, the client name doesn't exist!", _out);
 		}
 		else if(st.hasMoreTokens() && tkn.equals(ProtocolConstants.PACK_STR_CHANGE_PWD_HEAD)){
 			_dlog("I got a change-password package, now change it");
 			_dlog(str);
 			String name = st.nextToken();
-			/*if(st.hasMoreTokens()){
-				_elog("Invalid package");
-				return;
-			}*/
 			String pwd = st.nextToken();
 			if(st.hasMoreTokens()){
 				_elog("Invalid package");
 				return;
 			}
 			
-			if(_node.changePassword(name, pwd))
+			if(_server.changePassword(name, pwd))
 				NetComm.send(ProtocolConstants.PACK_STR_CONFIRM_HEAD,_out);
 			else
 				NetComm.send(ProtocolConstants.PACK_STR_BAD_HEAD, _out);
@@ -175,6 +184,8 @@ class MasterServerFileServerAccept extends ThreadBase{
 		}
 		if(_node != null && _node.isAlive())
 			_node.destroy();
+		if(_node != null)
+			_server.removeDead(_node);
 		_node = null;
 		_dlog("Finished");
 	}

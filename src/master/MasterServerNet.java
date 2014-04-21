@@ -7,7 +7,6 @@ package master;
  *              and listen to new client added
  */
 class MasterServerNet {
-
 	private MasterServerClusterNet _clusterNet;
 	private MasterServerClientNet _clientsNet;
 	//private Thread _threadClients;
@@ -40,7 +39,7 @@ class MasterServerNet {
 	public MasterServerNet(MasterServer server){
 		_server = server;
 		_clusterNet = new MasterServerClusterNet(_server);
-		
+		_clientsNet = new MasterServerClientNet(_server);
 		//_threadCluster = null;
 		//_threadClients = null;
 	}
@@ -51,6 +50,8 @@ class MasterServerNet {
 	}
 	
 	public void listenToClients(){
+		assert _clientsNet != null;
+		_clientsNet.start();
 		//_threadClients = new Thread(new ClientListener(_server));
 		//_threadClients.start();
 	}

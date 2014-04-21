@@ -43,7 +43,6 @@ class DropboxFileServerMasterNet {
 	}
 	
 	public DropboxFileServerMasterNet(DropboxFileServer server){
-		// TODO: map is for future use
 		_threadName = "DropboxFileServerMasterNet";
 		_server = server;
 		assert _server != null;
@@ -52,20 +51,35 @@ class DropboxFileServerMasterNet {
 	public boolean openConnections(){
 		_log("Try to connect to Master...");
 		
-		_dlog("openConnections(){");
-		boolean isConnected = connect();
-		_dlog("}");
-		
-		if(!isConnected){
-			_log("Cannot connect to Master");
-			//TODO: make it better, not just simply kill the whole
-		}else{
-			_log("Success!");
-			//_clientThread = new Thread(new ClientListner(_server));
-			//_clientThread.start();
-			// Master net also spawn a new thread to get user input
+		int i = 0;
+		while(true){
+			boolean isConnected = connect();
+			
+			if(!isConnected){
+				i++;
+				if(i == DropboxConstants.MAX_TRY){
+					break;
+				}
+				_log("Cannot connect to Master, retry " + i);
+				try{
+					Thread.sleep(DropboxConstants.TRY_CONNECT_MILLIS);
+				}catch(InterruptedException e){
+					if(!_server.noException()){
+						_elog(e.toString());
+					}
+					if(_server.debugMode()){
+						e.printStackTrace();
+					}
+					_log("Retry connection is interrupted");
+					break;
+				}
+			}else{
+				_log("Success!");
+				return true;
+			}
 		}
-		return isConnected;
+		_log("Failed");
+		return false;
 	}
 	
 	public void listen(){
@@ -74,7 +88,7 @@ class DropboxFileServerMasterNet {
 		_userNet.start();
 		
 		/* Use main thread, cannot be stopped */
-		while(!_sock.isClosed()){
+		while(_sock != null && !_sock.isClosed()){
 			try
 			{
 				String line = NetComm.receive(_in); // if it receives null, it means the connection is broken
@@ -91,7 +105,35 @@ class DropboxFileServerMasterNet {
 		
 		/* Clear */	
 		// Close main thread
-		close();
+		clear();
+		// Cancel the listening thread and retry
+		_server.cancelListeningThread(); // listening thread is guaranteed to be closed
+		/* Also cancel all of the syncers */
+		_server.cancelSyncers();
+		// Retry after 
+		try{
+			
+			_log("The connection to master is broken, reset everything and retry connection after "
+			+ DropboxConstants.TRY_CONNECT_MILLIS + " milliseconds");
+			
+			Thread.sleep(DropboxConstants.TRY_CONNECT_MILLIS);
+		
+		}catch(InterruptedException e){
+			if(!_server.noException()){
+				_elog(e.toString());
+			}
+			if(_server.debugMode()){
+				e.printStackTrace();
+			}
+		}
+		/* Renew user net */
+		//_userNet = new DropboxFileServerUserNet(_server, _userOut, _userIn, _userSock);
+		//_userNet.start();
+		// Recursive call, rerun the main thread
+		// Forever recursion
+		_server.run();
+		
+		clear();
 		_log(_threadName +" is stopped");
 	}
 	
@@ -145,7 +187,6 @@ class DropboxFileServerMasterNet {
 	}
 	
 	
-	// TODO: setup a timeout mechanism, if the master is not running, retry.
 	protected boolean connect(){
 		boolean connected = true;
 		try{
@@ -154,7 +195,12 @@ class DropboxFileServerMasterNet {
 			_in = new BufferedReader(new InputStreamReader(_sock.getInputStream()));
 			String reply = sendAll();
 			if(!reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
-				throw new Exception("Not confirmed");
+				/* Tokenize */
+				StringTokenizer st = new StringTokenizer(reply);
+				if(st.nextToken().equals(ProtocolConstants.PACK_STR_ERRMES_HEAD)){
+					_elog(st.nextToken());
+					return false;
+				}
 			}
 
 			_userSock = new Socket(_serverIP, _serverPort);
@@ -208,10 +254,24 @@ class DropboxFileServerMasterNet {
 	
 	public void closeConnections(){
 		_log("Close the connection...");
-		close();
+		int i = 0;
+		while(i < DropboxConstants.MAX_TRY){
+			if(close()){
+				_log("Success");
+				return;
+			}else{
+				_elog("Failed closing, retry " + i);
+				i++;
+			}
+		}
+		_elog("Failed");
 	}
 	
-	protected void close(){
+	protected void clear(){
+		closeConnections();
+	}
+	
+	protected boolean close(){
 		_dlog("Do main thread closing...");
 		if(_sock != null && !_sock.isClosed()){
 			_dlog("Closing the receiving thread");
@@ -231,22 +291,18 @@ class DropboxFileServerMasterNet {
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
+				return false;
 			}
 		}
-		else{
-			if(_sock == null){
-				throw new NullPointerException();
-			}else{
-				_sock = null;
-				_in = null;
-				_out = null;
-			}
-		}
+		_sock = null;
+		_in = null;
+		_out = null;
 		
 		_dlog("Cancel the user input thread");
 		if(_userNet != null){
-				_userNet.stop();
-				_userNet = null;
+			_userNet.stop();
+			_userNet.join(); // guaranteed to be closed
+			_userNet = null;
 		}
 		if(_userSock != null && !_userSock.isClosed()){
 			_dlog("Closing the user input thread");
@@ -266,17 +322,18 @@ class DropboxFileServerMasterNet {
 				if(_server.debugMode()){
 					e.printStackTrace();
 				}
-			}
-		}else{
-			if(_userSock == null){
-				throw new NullPointerException();
-			}else{
-				//_elog("Already closed");
-				_userSock = null;
-				_in = null;
-				_out = null;
+				return false;
 			}
 		}
+		_userSock = null;
+		_userIn = null;
+		_userOut = null;
+		
+		/* Cancel all client nodes */
+		
 		_dlog("Finished");
+		return true;
+		
+		/* CAUTION: _server is never cleared */
 	}
 }

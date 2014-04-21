@@ -19,8 +19,8 @@ final class MasterServer {
 	private boolean _useUI;
 	private boolean _hideException;
 	private MasterServerNet _serverNet;
-	private Map<String, Integer> _map;
-	private LinkedList<FileServerNode> _fsnodes;
+	private volatile LinkedList<ClientRecord> _clients;
+	private volatile LinkedList<FileServerNode> _fsnodes;
 	private Timer _timer;
 	
 	private void _dlog(String str){
@@ -42,8 +42,7 @@ final class MasterServer {
 		_useUI = useUI;
 		_debug = debug;
 		_hideException = hideException;
-		_map = new HashMap<String, Integer>();
-		
+		_clients = new LinkedList<ClientRecord>();
 		 
 		_fsnodes = /*(LinkedList<FileServerNode>) Collections.synchronizedList(*/new LinkedList<FileServerNode>();
 		initNet();
@@ -57,7 +56,7 @@ final class MasterServer {
 	
 	private void initTimer(){
 		_timer = new Timer();
-		_timer.scheduleAtFixedRate(new Echo(this), 2000, 2000);
+		_timer.scheduleAtFixedRate(new Echo(this), DropboxConstants.ECHO_MASTER, DropboxConstants.ECHO_MASTER);
 	}
 	
 	public void run(){
@@ -104,10 +103,6 @@ final class MasterServer {
 		return _hideException;
 	}
 	
-	public Map<String, Integer> getMap(){
-		return _map;
-	}
-	
 	public LinkedList<FileServerNode> getFS(){
 		return _fsnodes;
 	}
@@ -126,11 +121,10 @@ final class MasterServer {
 	}
 	
 	public synchronized void removeFileServer(int id){
-		// TODO: need verification
+
 		int i = 0;
 		for(FileServerNode fsn: _fsnodes){
 			if(id == fsn.getID()){
-				/* TODO: clear everything in this record */
 				fsn.clear();
 				break;
 			}
@@ -139,7 +133,7 @@ final class MasterServer {
 		_fsnodes.remove(i);
 	}
 	
-	public synchronized void printFileServers(){
+	public void printFileServers(){
 		
 		_log("There are " + _fsnodes.size() + " file server connected");
 		int i = 0;
@@ -150,21 +144,95 @@ final class MasterServer {
 			_log("MAX CLIENTS:" + fsn.getMaxClients());
 			_log("PRIO:" + fsn.getPriority());
 			_log("CONNECTED CLIENTS:"+fsn.getNumClients());
-			Map<String, String> mp = fsn.getMap();
-			Iterator it = mp.entrySet().iterator();
-			while(it.hasNext()){
-				Map.Entry pair = (Map.Entry)it.next();
-				 _log("<Clients name>:" + pair.getKey() + " <Client password>:" +pair.getValue()); 
-			}
 			System.out.println();
 			i++;
 		}
 	}
 	
+	public boolean clientExist(String name){
+		for(ClientRecord cr: _clients){
+			if(cr.getName().equals(name)){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public ClientRecord findClient(String name, String password){
+		for(ClientRecord cr: _clients){
+			if(cr.getName().equals(name) && cr.getPassword().equals(password)){
+				return cr;
+			}
+		}
+		return null;
+	}
+	
+	public synchronized boolean addClient(String name, String password, FileServerNode fs){
+		boolean exist = clientExist(name);
+		if(exist){
+			return false;
+		}else{
+			ClientRecord cr = new ClientRecord(name, password, fs);
+			_clients.add(cr);
+			return true;
+		}
+	}
+	
+	public synchronized boolean removeClient(String name){
+		boolean exist = clientExist(name);
+		if(!exist){
+			return false;
+		}
+		Iterator it = _clients.iterator();
+		while(it.hasNext()){
+			ClientRecord cr = (ClientRecord)it.next();
+			if(cr.getName().equals(name)){
+				it.remove();
+				break;
+			}
+		}
+		return true;
+	}
+	
+	public synchronized boolean removeClient(ClientRecord cr){
+		if(!_clients.contains(cr))
+			return false;
+		_clients.remove(cr);
+		return true;
+	}
+	
+	public synchronized boolean changePassword(String name, String pwd){
+		for(ClientRecord cr: _clients){
+			if(cr.getName().equals(name)){
+				cr.changePassword(pwd);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public synchronized void printClients(){
+		_log("There are " + _clients.size() + " clients");
+		int i = 0;
+		for(ClientRecord cr: _clients){
+			_log("client " + i + ": " + cr.getName() + " owner: file server " + cr.getOwner().getID()
+					+ " password:"+cr.getPassword());
+		}
+	}
+	
 	public synchronized void removeDead(FileServerNode fs){
 		assert fs.isAlive() == false;
-		_fsnodes.remove(fs);
+		
 		_log("Remove fileserver " + fs.getID());
+		/* Also remove associate clients */
+		Iterator it = _clients.iterator();
+		while(it.hasNext()){
+			ClientRecord cr = (ClientRecord)it.next();
+			if(cr.getOwner() == fs){
+				it.remove();
+			}
+		}
+		_fsnodes.remove(fs);
 		printFileServers();
 	}
 	
@@ -202,8 +270,8 @@ final class MasterServer {
 		public void run(){
 			garbageCollection();
 			printFileServers();
+			printClients();
 		}
-		
 	}
 	
 	public static void main(String[] args) {

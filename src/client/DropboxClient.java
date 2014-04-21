@@ -1,11 +1,9 @@
 package client;
 
-import common.DropboxConstants;
-import common.FileOperation;
-import common.ProtocolConstants;
+import common.*;
 
 import java.io.*;
-import java.util.HashMap;
+import java.util.*;
 
 import utils.*;
 
@@ -14,210 +12,351 @@ import utils.*;
  * Class: DropboxClient
  * Description:
  */
-public class DropboxClient implements FileSynchronizationClient, Runnable {
+public class DropboxClient {
 
 	private boolean _debug;
 	private boolean _useUI;
+	private boolean _hideException;
 	
 	private SyncStreamWriter _sw;
 	private SyncStreamParser _sp;
-	private DropboxClientNet _cn;
+	private DropboxClientNet _net;
 	private DropboxFileManager _fm;
 	
-	private static void log(String s){
-		System.err.println("Dropbox Client | " + s);
+	private String _name;
+	private String _root;
+	private String _password;
+	
+	private String _masterIP = DropboxConstants.MASTER_IP;
+	private int _masterPort = DropboxConstants.MASTER_CLIENT_PORT;
+	
+	private void _dlog(String str){
+		if(_debug)
+			System.out.println("[DropboxClient (DEBUG)]:" + str);
 	}
-	/**
-	 * Implement run()
-	 */
-    public void run() {
-    	try{
-    		// Keep trying to connect
-    		while(true){
-    			_cn.connect();
-    			if(_cn.getSocket().isConnected())
-    			{
-    				_sw = new SyncStreamWriter(_fm.getHome(),new DataOutputStream(_cn.getSocket().getOutputStream()),_debug);
-    				_sp = new SyncStreamParser(_fm.getHome(),new DataInputStream(_cn.getSocket().getInputStream()),_debug);
-    				// The first time we connect we write a query package to get the files from server 
-    				System.out.println("Sent a package to server to query");
-    				_sw.writePackageHeader(ProtocolConstants.PACK_QUERY_HEAD);
-    				Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
-    				break;
-    			}
-    		}
-    			// We get a connection, then sync
-    		while(_cn != null && _cn.getSocket().isConnected()&& !_cn.getSocket().isClosed()){
-    			
-    			// Check the stream;
-    			sync();
-    			
-    			Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
-    		}
-    		
-    	}catch(InterruptedException e){
-    		System.err.println("Thread sleep error");
-    		if( _debug )
-    			e.printStackTrace();
-    	}catch(IOException e){
-    		System.err.println("Write stream error");
-    		if( _debug )
-    			e.printStackTrace();
-    	}
-    	finally{
-    		_cn.close();
-    	}
-    	
-    	System.out.println("Finish sync");
-    }
+	
+	private static void _elog(String str){
+		System.err.println("[DropboxClient (ERROR)]:" + str);
+	}
+	
+	private static void _log(String str){
+		System.out.println("[DropboxClient]:" + str);
+	}
 
-    /**
-     * Implement sync()
-     */
-    public boolean sync() throws IOException {
+	// CAUTION: this function for now actually just connect to file server directly
+	private boolean connectToMaster(){
+		return _net.openConnections(_masterIP, _masterPort);
+	}
+	
+	private void closeConnection(){
+		_net.closeConnection();
+	}
+
+	private boolean connectToFileServer(String ip){
+		_net.closeConnection();
+		return _net.openConnections(ip, DropboxConstants.FILE_SERVER_PORT);
+	}
+	
+	public void run() {
+		while(true){
+			if(!connectToMaster()){
+				_elog("Aborting");
+				return;
+			}else{
+				_log("Delay the identification for " + DropboxConstants.IDENTIFY_DELAY + " milliseconds");
+				try{
+					Thread.sleep(DropboxConstants.IDENTIFY_DELAY);
+				}catch(InterruptedException e){
+					if(!_hideException){
+						_elog(e.toString());
+					}
+					if(_debug){
+						e.printStackTrace();
+					}
+				}
+				String fsIP = _net.identify();
+				if(fsIP == null){
+					
+					_elog("Not confirmed by master");
+					_elog("Reason could be: wrong account|name; bad package");
+					_elog("Aborting");
+					closeConnection();
+					return;
+				}else{
+					if(!connectToFileServer(fsIP)){
+						_elog("Aborting");
+						return;
+					}
+
+					// We got the conection, send the identification to file server
+					_log("Send verification message to file server");
+					try{
+						DataOutputStream out = new DataOutputStream(_net.getSocket().getOutputStream());
+						DataInputStream in = new DataInputStream(_net.getSocket().getInputStream());
+						out.writeInt(ProtocolConstants.PACK_INIT_HEAD);
+						out.writeChars(_name);
+						out.writeChar('\n');
+						out.writeChars(_password);
+						out.writeChar('\n');
+						int reply = in.readInt();
+						if(reply == ProtocolConstants.PACK_CONFIRM_HEAD){
+							_log("User account confirmed!");
+							prepareSync();
+						}else if(reply == ProtocolConstants.PACK_FULL_HEAD){
+							_elog("One terminal is already using"); // Not applicable now
+							return;
+						}else if(reply == ProtocolConstants.PACK_FAIL_HEAD){
+							_elog("Your combination of name and password is not correct");
+							return;
+						}
+						while(!_net.getSocket().isClosed()){
+							sync();
+							_dlog("sync suspended (resume after " + DropboxConstants.SYNC_SLEEP_MILLIS + ")");
+							Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
+						}
+					}
+					catch(InterruptedException e){
+						if(!_hideException){
+							e.printStackTrace();
+						}
+						if(_debug){
+							e.printStackTrace();
+						}
+					}
+					catch(IOException e){
+						if(!_hideException){
+							e.printStackTrace();
+						}
+						if(_debug){
+							e.printStackTrace();
+						}
+					}
+					finally{
+						closeConnection();
+						_elog("The connection to file server is broken, retry connection to master");
+					}
+				}
+			}
+		}
+	}
+
+    private void prepareSync() throws IOException, InterruptedException{
+    	_sw = new SyncStreamWriter(_fm.getHome(),new DataOutputStream(_net.getSocket().getOutputStream()),_debug);
+		_sp = new SyncStreamParser(_fm.getHome(),new DataInputStream(_net.getSocket().getInputStream()),_debug);
+		_sw.writePackageHeader(ProtocolConstants.PACK_QUERY_HEAD);
+		Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
+    }
+    
+    private void sync() throws IOException {
     	
     	// Sync once
     	// Firstly read to see if there is file map from server, if yes, then we sync from server
     	int packHead = _sp.parse();
 		if(packHead == ProtocolConstants.PACK_DATA_HEAD){
-			System.out.println("I got data stream, now syncing");
+			_dlog("I got data stream, now syncing");
 			HashMap<String, FileOperation> fileMap = _sp.parseFileMap();
 			_fm.receiveFileMap(fileMap);
 		    _fm.printReceivedFileMap();
 			_fm.processReceivedFileMap();
 			
-			System.out.println("Send an empty header");
+			_dlog("Send an empty header");
 			try{
 				_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
 			}catch(IOException e){
-				System.err.println("Error occurs when writing data header");
-				if(_debug)
+				if(!_hideException){
+					_elog(e.toString());
+				}
+				if(_debug){
 					e.printStackTrace();
+				}
 			}
 			
 		}else if(packHead == ProtocolConstants.PACK_QUERY_HEAD){
-			System.out.println("I got query");
+			_dlog("I got query");
 			
 		}else if(packHead == ProtocolConstants.PACK_NULL_HEAD)
 		{
-			System.out.println("The directoy content of your home is:");
+			_dlog("The directoy content of your home is:");
 			_fm.buildFileMap();
 			_fm.printFileMap();
 			if(!_fm.checkDiff())
 			{
-			    System.out.println("Your home is updated");
-				System.out.println("Now syncing your home to server");
+			    _dlog("Your home is updated");
+				_dlog("Now syncing your home to server");
 				try{
 					_sw.writePackageHeader(ProtocolConstants.PACK_DATA_HEAD);
 				}catch(IOException e){
-					System.err.println("Error occurs when writing data header");
-					if(_debug)
+					if(!_hideException){
+						_elog(e.toString());
+					}
+					if(_debug){
 						e.printStackTrace();
+					}
 				}
 				_sw.writeFromFileMap(_fm.getFileMap(), _fm.getPrevFileMap());
 			}
 			else{
-				System.out.println("Send an empty header");
+				_dlog("Send an empty header");
 				// Else we just send an empty header
 				try{
 					_sw.writePackageHeader(ProtocolConstants.PACK_NULL_HEAD);
 				}catch(IOException e){
-					System.err.println("Error occurs when writing data header");
-					if(_debug)
+					if(!_hideException){
+						_elog(e.toString());
+					}
+					if(_debug){
 						e.printStackTrace();
+					}
 				}
 			}
 		}else if(packHead == ProtocolConstants.PACK_INVALID_HEAD){
 			try{
-				_cn.getSocket().close();
-				}catch(IOException e){
-					System.out.println("Close socket error");
-					if(_debug)
-						e.printStackTrace();
+				_net.getSocket().close();
+			}catch(IOException e){
+				if(!_hideException){
+					_elog(e.toString());
 				}
+				if(_debug){
+					e.printStackTrace();
+				}
+			}
 		}
-        return false;
     }
 
-    
-    /**
-     * Default constructor
-     */
-    public DropboxClient(){
-    	_debug = false;
-    	_useUI = false;
-    	_cn = new DropboxClientNet();
-    	_fm = new DropboxFileManager(DropboxConstants.DROPBOX_CLIENT_ROOT, _debug);
+    public static void usage(){
+    	_log("Dropbox Client:");
+    	_log("-d: for debug mode (default false)" );
+    	_log("-u: to use user interface (default false)");
+    	_log("-he: to hide the exception");
+    	//_log("-p the port number you want to use (default" + DropboxConstants.CLIENT_PORT + ")");
+    	_log("-name: the client name");
+    	_log("-pass: the client password");
+    	_log("You must provide your client name and password");
+    	_log("The home folder will automatically be: CWD/YOUR CLIENTNAME"+
+    			", where CWD is your current working directory)");
     }
     
-    /**
-     * Constructor 
-     * @param ip: IP address
-     * @param port: port number
-     * @param debug: in debug mode?
-     * @param useUI: use user interface?
-     */
-    public DropboxClient( String ip, int port, boolean debug, boolean useUI, String home){
+    public void printStatus(){
+    	_log("**Dropbox Client configuration:");
+    	_log("Debug:" + _debug);
+    	_log("UseUI:" + _useUI);
+    	_log("Hide Exception:" + _hideException);
+    	_log("Name:" + _name);
+    	_log("Password:" + _password);
+    	_log("Port (destination):" +  _masterPort);
+    }
+    
+    public void initHome(String name){
+    	assert _root != null;
+    	_dlog("Initialize disk");
+    	String fullpath = _root + System.getProperty("file.separator") + name;
+    	File theDir = new File(fullpath);
+    	// if the disk does not exist, create it
+    	if (!theDir.exists()) {
+    		_log("Creating directory: " + fullpath);
+    		boolean result = theDir.mkdir();  
+
+    		if(result) {    
+    			_log(fullpath + " created.");  
+    		}
+    		else{
+    			_elog("Cannot initialize the directory");
+    			System.exit(1);
+    		}
+    	}
+    	_dlog("Client home: " + fullpath);
+    	_fm = new DropboxFileManager(fullpath,_debug);
+    }
+    
+    private void initRoot(String home){
+    	_dlog("Initialize disk");
+    	File theDir = new File(home);
+    	// if the disk does not exist, create it
+    	if (!theDir.exists()) {
+    		_log("Creating directory: " + home);
+    		boolean result = theDir.mkdir();  
+
+    		if(result) {    
+    			_log(home + " created.");  
+    		}
+    		else{
+    			_elog("Cannot initialize the directory");
+    			System.exit(1);
+    		}
+    	}
+    	_root = home;
+    	_dlog("Disk home: " + home);
+    }
+    
+    public boolean debugMode(){
+    	return _debug;
+    }
+    
+    public boolean noException(){
+    	return _hideException;
+    }
+    
+    public String getMasterIP(){
+    	return _masterIP;
+    }
+    
+    public int getMasterPort(){
+    	return _masterPort;
+    }
+    
+    public String getName(){
+    	return _name;
+    }
+    
+    public String getPassword(){
+    	return _password;
+    }
+    
+    public DropboxClient(boolean debug, boolean useUI, boolean hideException, String name, String password){
     	_debug = debug;
     	_useUI = useUI;
-    	_cn = new DropboxClientNet(ip, port, debug);
-    	_fm = new DropboxFileManager(home,_debug);
+    	_hideException = hideException;
+    	_name = name;
+    	_password = password;
+    	_net = new DropboxClientNet(this);
+    	initRoot(DropboxConstants.CLIENT_ROOT);
+    	initHome(_name);
+    	printStatus();
     }
     
-    /**
-     * Entry of program
-     * @param args argument list
-     */
     public static void main(String[] args) {
     	
+    	String name = null;
+    	String password = null;
     	boolean debug = false;
     	boolean useUI = false;
-    	String ip = "127.0.0.1";
-    	int port = DropboxConstants.FILE_SERVER_PORT;
-    	String home = DropboxConstants.DROPBOX_CLIENT_ROOT;
+    	boolean hideException = false;
     	
-    	// Show help:
-    	System.out.println("Dropbox Client:");
-    	System.out.println("-d for debug mode (default false)" );
-    	System.out.println("-u to use user interface (default false)");
-    	System.out.println("-addr following the IP address and port number"
-    			+ " (default using 127.0.0.1:5000)");
-    	System.out.println("-home following the home folder you want to sync"
-    			+ " (default using /tmp/DropboxTest)");
-    	
-    	// parse the arguments
-    	try{
-    		System.out.println("Processing cmd...");
-    		for( int i = 0; i < args.length; i++ ){
-    			if(args[i].equals("-d"))
-    				debug = true;
-    			else if(args[i].equals("-u"))
-    				useUI = true;
-    			else if(args[i].equals("-addr")){
-    				i++;
-    				int tokenPos = args[i].indexOf(':');
-    				ip = args[i].substring(0, tokenPos);
-    				port = Integer.parseInt(args[i].substring(tokenPos+1));
-    			}
-    			else if(args[i].equals("-home")){
-    				i++;
-    				home = args[i];
-    			}
+    	for( int i = 0; i < args.length; i++ ){
+    		if(args[i].equals("-d")){
+    			debug = true;
     		}
-    	}catch(Exception e){
-    		log("Processing cmd failed");
+    		else if(args[i].equals("-u")){
+    			useUI = true;
+    		}
+    		else if(args[i].equals("-he")){
+    			hideException = true;
+    		}
+    		else if(args[i].equals("-name")){
+    			i++;
+    			name = args[i];
+    		}else if(args[i].equals("-pass")){
+    			i++;
+    			password = args[i];
+    		}
+    	}
+    	
+    	if(name == null || password == null){
+    		usage();
     		System.exit(1);
     	}
     	
-    	// Show the settings we get
-    	System.out.println("Client setting:");
-    	System.out.println("Debug mode? | " + debug );
-    	System.out.println("Use UI? | " + useUI );
-    	System.out.println("Server address | " + ip + ":" + port );
-    	System.out.println("Home directory | " + home);
-    	
-    	// New a thread for client
-    	Thread t = new Thread(new DropboxClient(ip, port, debug, useUI,home), "DropboxClient");
-    	t.start();
+    	DropboxClient client = new DropboxClient(debug, useUI, hideException, name, password);
+    	client.run();
     }
 }

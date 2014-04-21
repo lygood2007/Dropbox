@@ -19,16 +19,15 @@ final class DropboxFileServer {
 	private boolean _hideException;
 	private String _disk; // The location of the disk, is indeed the directory. 
 	                             // Just simulate.
-	//private DropboxFileServerMasterNettmp _serverNet;
-	//private DropboxFileServerListenNet _clientNet;
+	private Timer _timer;
+	private DropboxFileServerClientNet _clientNet;
 	private DropboxFileServerMasterNet _masterNet;
-	//private Map<String, String> _map;
 	private int _id; // The unique identifier for this file server
 	private int _prio; // The priority of this file server. (1->5)
 	               // The larger it is the higher it will be chosen to be the sync server
 	private int _maxClientNum;
 	private Map<String, ClientNode> _clients;
-	
+	/*private boolean _clientsDirty;*/
 	private void _dlog(String str){
 		if(_debug)
 			System.out.println("[DropboxFileServer (DEBUG)]:" + str);
@@ -52,10 +51,16 @@ final class DropboxFileServer {
     	_prio = prio;
     	_maxClientNum = maxClientNum;
     	_clients = new TreeMap<String, ClientNode>();
-    	
+    	//_clientsDirty = false;
     	initDisk(_disk);
     	initNet();
+    	initTimer();
     	printStatus();
+    }
+    
+    private void initTimer(){
+    	_timer = new Timer();
+    	_timer.schedule(new Echo(this), DropboxConstants.ECHO_FILE_SERVER,DropboxConstants.ECHO_FILE_SERVER);
     }
     
     private void initDisk(String disk){
@@ -68,18 +73,31 @@ final class DropboxFileServer {
 
     		if(result) {    
     			_log(disk + " created.");  
+    			/* String subDir = disk + System.getProperty("file.separator") + _id;
+    			 File subDirFile = new File(subDir);
+    			 result = subDirFile.mkdir();
+    			 if(result){ 
+    				 _log(subDir + " created.");
+    				 _root = subDir;
+    			 }else{
+    				 _elog("Cannot initialize " + subDir);
+    				 System.exit(1);
+    			 }*/
     		}
     		else{
-    			_elog("Cannot initialize the directory");
+    			_elog("Cannot initialize " + disk);
     			System.exit(1);
     		}
     	}
-    	_dlog("Disk home: " + _disk);
+    	// load client record into mem
+    	loadClientsFromFile();
+    	_dlog("Disk root: " + _disk);
     }
     
     private void initNet(){
     	_dlog("Initialize network..");
     	_masterNet = new DropboxFileServerMasterNet(this);
+    	_clientNet = new DropboxFileServerClientNet(this);
     }
     
     public void run(){
@@ -91,6 +109,12 @@ final class DropboxFileServer {
     		_masterNet.listen();
     	}
     	_dlog("Done!");
+    	cancelTimer();
+    }
+    
+    public void cancelTimer(){
+    	_dlog("Cancel the timer");
+    	_timer.cancel();
     }
     
     /**
@@ -108,7 +132,139 @@ final class DropboxFileServer {
      * listenToClients: listen to new client (spawn a new thread)
      */
     private void listenToClients(){
+    	_clientNet.start();
+    }
+    
+    public void cancelListeningThread(){
+    	_clientNet.stop();
+    	_clientNet.join();
+    }
+    
+    public synchronized void cancelSyncers(){
+    	_log("Cancel all of the syncers..");
+    	Iterator it = _clients.entrySet().iterator();
+    	while(it.hasNext()){
+    		Map.Entry pair = (Map.Entry)it.next();
+    		ClientNode cn = (ClientNode)pair.getValue();
+    		cn.cancelSyncer();
+    	}
+    }
+    
+    public ClientNode findMatch(String name, String password){
+    	if(!_clients.containsKey(name)){
+    		return null;
+    	}else{
+    		ClientNode cn = _clients.get(name);
+    		if(!cn.match(name, password)){
+    			return null;
+    		}else{
+    			return cn;
+    		}
+    	}
+    }
+    
+    public void appendClientToFile(String name, String password){
+    	File file = new File(_disk + System.getProperty("file.separator") + "clients.txt");
+		try{
+			// if file doesnt exists, then create it
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			
+			FileWriter fw = new FileWriter(_disk + System.getProperty("file.separator") +"clients.txt", true);
+			fw.write(name + " " + password + "\n");
+			/* Close */
+			fw.flush();
+			fw.close();
+		}catch(IOException e){
+			if(!_hideException){
+				_elog(e.toString());
+			}
+			if(_debug){
+				e.printStackTrace();
+			}
+		}
+    }
+    
+    public void writeClientsToFile(){
+    	File file = new File(_disk + System.getProperty("file.separator") + "clients.txt");
+		try{
+			// if file doesnt exists, then create it
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			
+			FileWriter fw = new FileWriter(_disk + System.getProperty("file.separator") + "clients.txt", false);
+			Iterator it = _clients.entrySet().iterator();
+			while(it.hasNext()){
+				Map.Entry pair= (Map.Entry)it.next();
+				String name = (String)pair.getKey();
+				ClientNode c = (ClientNode)pair.getValue();
+				fw.write(name + " " + c.getPassword() + '\n');
+			}
+			/* Close */
+			fw.flush();
+			fw.close();
+		}catch(IOException e){
+			if(!_hideException){
+				_elog(e.toString());
+			}
+			if(_debug){
+				e.printStackTrace();
+			}
+		}
+    }
+    
+    public void loadClientsFromFile(){
+    	try{
+    		BufferedReader saveFile=
+    				new BufferedReader(new FileReader(_disk + System.getProperty("file.separator") + "clients.txt"));
+    		while(true){
+    			String nextLine = saveFile.readLine();
+    			
+    			
+    			if(nextLine == null)
+    				return;
+    			StringTokenizer st = new StringTokenizer(nextLine);
+    			if(st.countTokens() != 2){
+    				throw new Exception("Invalid file");
+    			}
+    			String name = st.nextToken();
+    			String password = st.nextToken();
+    			addClient(name, password, true);
+    		}
+    	}catch(IOException e){
+    		if(!_hideException){
+    			_elog(e.toString());
+    		}
+    		if(_debug){
+    			e.printStackTrace();
+    		}
+    		
+    	}catch(Exception e){
+    		if(!_hideException){
+    			_elog(e.toString());
+    		}
+    		if(_debug){
+    			e.printStackTrace();
+    		}
+    	}
     	
+    	// Create the file if needed
+    	File f = new File(_disk 
+				+ System.getProperty("file.separator") + "clients.txt");
+		try{
+			f.createNewFile();
+			_log("Created " + _disk 
+					+ System.getProperty("file.separator") + "clients.txt");
+		}catch(IOException e){
+			if(!_hideException){
+    			_elog(e.toString());
+    		}
+    		if(_debug){
+    			e.printStackTrace();
+    		}
+		}
     }
     
     public boolean changePassword(String name, String oldPassword, String password){
@@ -122,12 +278,13 @@ final class DropboxFileServer {
     			return false;
     		}else{
     			cn.setPassword(password);
+    			//_clientsDirty = true;
     			return true;
     		}
     	}
     }
     
-    public boolean addClient(String clientName, String password){
+    public boolean addClient(String clientName, String password, boolean nocheck){
     	assert _disk != null;
     	if(_clients.containsKey(clientName)){
     		_elog("Client already exist");
@@ -145,6 +302,10 @@ final class DropboxFileServer {
     			_log(newDir + " created.");  
     			ClientNode cn = new ClientNode(clientName, fullpath, password);
     			_clients.put(clientName, cn);
+    			// Renew the file. Currently just delete it and recreate a new one
+    			// This is stupid
+    			// TODO (Optional): make this better
+    			appendClientToFile(clientName, password);
     		}
     		else{
     			_elog("Cannot create the directory");
@@ -153,10 +314,17 @@ final class DropboxFileServer {
     			return false;
     		}
     	}else{
-    		_elog("The name is used");
-    		return false;
+    		if(nocheck){
+    			ClientNode cn = new ClientNode(clientName, fullpath, password);
+    			_clients.put(clientName, cn);
+    		}else{
+    			_elog("The name is used");
+    			return false;
+    		}
+    		/*_elog("The name is used");
+    		return false;*/
     	}
-    	_dlog("Client root: " + _disk);
+    	//_clientsDirty = true;
     	return true;
     }
     
@@ -167,9 +335,14 @@ final class DropboxFileServer {
     	{
     		ClientNode cn = _clients.get(clientName);
     		boolean success = cn.clear();
-    		// remove the file
+    		_clients.remove(clientName);
+    		if(success == true){
+    			// Renew the file. Currently just delete it and recreate a new one
+    			// This is stupid
+    			// TODO (Optional): make this better
+    			writeClientsToFile();
+    		}
     		return success;
-    		
     	}
     }
     
@@ -208,8 +381,8 @@ final class DropboxFileServer {
     	_log("-p: to specify port for listening (default "+
     			DropboxConstants.FILE_SERVER_PORT+")");
     	_log("-disk: root your server is located"
-    			+ " (default using cwd/"+DropboxConstants.FILE_SERVER_ROOT+
-    			", where cwd is your current working directory)");
+    			+ " (default using CWD/"+DropboxConstants.FILE_SERVER_ROOT+ " id" + 
+    			", where CWD is your current working directory)");
     	_log("-prio: the priority of this server ("+DropboxConstants.MIN_PRIO+
     			"-"+DropboxConstants.MAX_PRIO+")");
     	_log("-mc: the max number of clients can be connected in this server (0-"+
@@ -264,6 +437,38 @@ final class DropboxFileServer {
     	return _clients.size();
     }
     
+    public synchronized void garbageCollection(){
+    	_dlog("Run garbage collection");
+    	Iterator it = _clients.entrySet().iterator();
+    	while(it.hasNext()){
+    		Map.Entry pair = (Map.Entry)it.next();
+    		//TODO
+    		//String name = (String)pair.getKey();
+    		ClientNode cn = (ClientNode)pair.getValue();
+    		_dlog("Remove dead syncer");
+    		cn.removeDeadSyncer();
+    	}
+    }
+    
+    private class Echo extends TimerTask{
+		
+		private DropboxFileServer _server;
+		
+		private void _log(String str){
+			System.out.println("[Echo]:"+str);
+		}
+		public Echo(DropboxFileServer server){
+			_server = server;
+		}
+		
+		@Override
+		public void run(){
+			garbageCollection();
+			if(_server.debugMode())
+				printStatus();
+		}
+    }
+		
     public static void main(String[] args) {
     	
     	int port = DropboxConstants.FILE_SERVER_PORT;
@@ -312,7 +517,7 @@ final class DropboxFileServer {
 				hideException = true;
 			}
     	}
-    	
+    	disk = disk + id;
     	DropboxFileServer server = new DropboxFileServer(id, prio, maxClientNum, port,debug,useUI,hideException,disk);
     	server.run();
     }

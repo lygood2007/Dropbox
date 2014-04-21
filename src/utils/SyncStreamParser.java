@@ -9,6 +9,7 @@ import common.DropboxConstants;
 import common.DummyFile;
 import common.FileOperation;
 import common.ProtocolConstants;
+
 import java.io.*;
 
 
@@ -23,47 +24,53 @@ public class SyncStreamParser {
 	private String _home;
 	boolean _debug;
 	
-	public int parse(){
+	private void _dlog(String str){
+		if(_debug)
+			System.out.println("[SyncStreamParser (DEBUG)]:" + str);
+	}
+	
+	private static void _elog(String str){
+		System.err.println("[SyncStreamParser (ERROR)]:" + str);
+	}
+	
+	private static void _log(String str){
+		System.out.println("[SyncStreamParser]:" + str);
+	}
+	
+	public int parse() throws IOException {
 		int packHead = 0;
 		try{
 			packHead = parseHead();
 		}catch(IOException e){
-			System.err.println("Error occurs when parse stream header");
-			if(_debug)
-				e.printStackTrace();
+			throw e;
 		}
 		return packHead;
 	}
 	
-	public HashMap<String, FileOperation> parseFileMap() {
+	public HashMap<String, FileOperation> parseFileMap() throws IOException{
 		if(_is != null){
 			String targetHome = null;
 			try{
 				int tarLength = _is.readInt();
-				if(_debug){
-					System.out.println("Target home length: " + tarLength);
-				}
+				
+				_dlog("Target home length: " + tarLength);
+				
 				byte []nameBytes = new byte[tarLength];
 				_is.read(nameBytes);
 				targetHome = new String(nameBytes);
-				if(_debug){
-					System.out.println("Target home dir: " + targetHome);
-				}
+				
+				_dlog("Target home dir: " + targetHome);
+				
 			}catch(IOException e){
-				System.err.println("Error occurs when parsing the home directory");
-				if(_debug)
-					e.printStackTrace();
+				throw e;
 			}
 			int fileNum = 0;
 			try{
 				// Valid stream			
-				fileNum = _is.readInt();
-				if(_debug)
-					System.out.println("Filenum: " + fileNum);
+				fileNum = _is.readInt();		
+				_dlog("Filenum: " + fileNum);
 			}catch(IOException e){
-				System.err.println("Error occurs when parsing the file number");
-				if(_debug)
-					e.printStackTrace();
+				throw e;
 			}
 			
 			try
@@ -78,9 +85,7 @@ public class SyncStreamParser {
 				return fileMap;
 			}	
 			catch(IOException e){
-				System.err.println("Error occurs when process received file map");
-				if(_debug)
-					e.printStackTrace();
+				throw e;
 			}
 		}
 		return null;
@@ -89,9 +94,8 @@ public class SyncStreamParser {
 	public void readEach(DataInputStream is, HashMap<String, FileOperation> fileMap) throws IOException {
 		if(is != null){
 			int nameLength = is.readInt();
-			if(_debug){
-				System.out.println("Name length: " + nameLength);
-			}
+			_dlog("Name length: " + nameLength);
+			
 			byte []nameBytes = new byte[nameLength];
 			is.read(nameBytes);
 			String fileName = new String(nameBytes);
@@ -130,12 +134,11 @@ public class SyncStreamParser {
 				fo.setBytes(fileBytes);
 			}
 				// Print the data we get
-			if(_debug)
-				System.out.println("Filename: "+fileName + "(" + flag +")"
+			_dlog("Filename: "+fileName + "(" + flag +")"
 						+ " Operation: " + operation + " LastTime: " + lastModifiedTime);
 			if(fileBytes != null && _debug){
 				String fileContent = new String(fileBytes);
-				System.out.println(fileContent);
+				_dlog(fileContent);
 			}
 		}
 	}
@@ -147,12 +150,6 @@ public class SyncStreamParser {
 			return ProtocolConstants.PACK_INVALID_HEAD;
 	}
 	
-	public SyncStreamParser(){
-		_is = null;
-		_debug = false;
-		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
-	}
-	
 	public SyncStreamParser(String home, DataInputStream is, boolean debug){
 		_is = is;
 		_debug = debug;
@@ -161,5 +158,13 @@ public class SyncStreamParser {
 	
 	public DataInputStream getInputStream(){
 		return _is;
+	}
+	
+	public void closeStream() throws IOException{
+		try{
+			_is.close();
+		}catch(IOException e){
+			throw e;
+		}
 	}
 }

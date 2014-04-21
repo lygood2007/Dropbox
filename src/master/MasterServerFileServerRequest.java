@@ -17,6 +17,7 @@ public class MasterServerFileServerRequest extends ThreadBase{
 	private BufferedReader _in;
 	private Socket _sock;
 	private FileServerNode _node;
+	
 	private void _dlog(String str){
 		if(_server.debugMode())
 			System.out.println("[MasterServerFileServerRequest (DEBUG)]:" + str);
@@ -62,7 +63,7 @@ public class MasterServerFileServerRequest extends ThreadBase{
 	{
 		Thread thisThread = Thread.currentThread();
 		try{
-			while(thisThread == _t){ // Cancel point
+			while(_sock != null && !_sock.isClosed() && thisThread == _t){ // Cancel point
 				synchronized (this){
 					while(_suspended){ // Suspension point
 						wait();
@@ -127,6 +128,8 @@ public class MasterServerFileServerRequest extends ThreadBase{
 		}
 		if(_node != null && _node.isAlive())
 			_node.destroy();
+		if(_node != null)
+			_server.removeDead(_node);
 		_node = null;
 		_dlog("Finished");
 	}

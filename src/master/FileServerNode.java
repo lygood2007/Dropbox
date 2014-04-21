@@ -16,18 +16,19 @@ final class FileServerNode {
 	private Socket _socket;
 	private String _ip;	
 	private int _id;
-	
+	//private int _port;
 	/* mutable, can be changed, no need to be volatile because they are 
 	 * changed in synchronized block */
 	private int _prio;
 	private int _maxClients;
-	private Map<String, String> _mp;
+	//private Map<String, String> _mp;
 	private boolean _alive;
 	private MasterServerFileServerAccept _fsaNet;
 	private MasterServerFileServerRequest _fsqNet;
+	private LinkedList<ClientRecord> _clients;
 	
 	public FileServerNode(){
-		_mp = new TreeMap<String, String>();
+		_clients = new LinkedList<ClientRecord>();
 		_alive = true;
 	}
 	
@@ -72,7 +73,7 @@ final class FileServerNode {
 	}
 	
 	public int getNumClients(){
-		return _mp.size();
+		return _clients.size();
 	}
 	
 	public int getID(){
@@ -91,20 +92,24 @@ final class FileServerNode {
 		return _alive;
 	}
 	
-	public Map<String, String> getMap(){
+	/*public Map<String, String> getMap(){
 		return _mp;
 	}
 	
 	public synchronized void clearMap(){
 		_mp.clear();
+	}*/
+	
+	public synchronized void clearClients(){
+		_clients.clear();
 	}
 	
-	public synchronized void addEntry(String key, String val){	
-		_mp.put(key, val);
+	public synchronized void addEntry(ClientRecord cr){	
+		_clients.add(cr);
 	}
 	
-	public synchronized void removeEntry(String key){
-		_mp.remove(key);
+	public synchronized void removeEntry(ClientRecord cr){
+		_clients.remove(cr);
 	}
 	
 	public synchronized void destroy(){
@@ -112,14 +117,6 @@ final class FileServerNode {
 		_alive = false;
 	}
 	
-	public synchronized boolean changePassword(String name, String password){
-		if(!_mp.containsKey(name)){
-			return false;
-		}else{
-			_mp.put(name, password);
-			return true;
-		}
-	}
 	public synchronized void clear(){
 		
 		if(_fsqNet != null &&!_fsqNet.terminated()){
@@ -140,8 +137,8 @@ final class FileServerNode {
 		_userSocket = null;
 		_socket = null;
 		_ip = null;
-		_mp.clear();
-		_mp = null;
+		clearClients();
+		_clients = null;
 		_fsqNet = null;
 		_fsaNet = null;
 	}

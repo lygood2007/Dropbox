@@ -33,12 +33,11 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		_sock = sock;
 		_out = userOut;
 	}
-
 	
 	public void clear(){
 		_dlog("Do clear...");
 		try{
-			if(!_sock.isClosed())
+			if(_sock != null && !_sock.isClosed())
 				_sock.close();
 			/* Close stream */
 			_in.close();
@@ -57,25 +56,42 @@ public class DropboxFileServerUserNet extends ThreadBase{
 				e.printStackTrace();
 			}
 		}
+		
 		_dlog("Finished");
+	}
+	@Override
+	public void stop(){
+		if(_suspended == true){
+			_elog("Cannot stop when suspending");
+			return;
+		}
+		if(_t!=null){
+			_t.interrupt();
+		}
+		_t = null;
 	}
 	
 	@Override
 	public void run(){
 		usage();
-		Scanner in = new Scanner(System.in);
+		BufferedReader br = new BufferedReader( new InputStreamReader(System.in));
 		Thread thisThread = Thread.currentThread();
 		try
 		{
-			while(!_sock.isClosed() && thisThread == _t){ //Cancel point
+			while(_sock != null && !_sock.isClosed() && thisThread == _t){ //Cancel point
 				synchronized(this) {
 					while(_suspended) { // Suspension point
 						wait();
 					}
 				}
 				System.out.println("Your input:");
-				String s = in.nextLine();// Read from user input
-				parse(s);
+				//String s = in.nextLine();// Read from user input
+				
+				while(!br.ready()){
+						Thread.sleep(200);//Arbitrary number
+				}
+				String line = br.readLine();
+				parse(line);
 			}
 		}catch(InterruptedException e){ // Cancel point
 			if(!_server.noException()){
@@ -130,6 +146,11 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			return true;
 		}else{
+			/* Tokenize it */
+			StringTokenizer st = new StringTokenizer(reply);
+			if(st.nextToken().equals(ProtocolConstants.PACK_STR_ERRMES_HEAD)){
+				_elog(st.nextToken());
+			}
 			return false;
 		}
 	}
@@ -141,6 +162,10 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			return true;
 		}else{
+			StringTokenizer st = new StringTokenizer(reply);
+			if(st.nextToken().equals(ProtocolConstants.PACK_STR_ERRMES_HEAD)){
+				_elog(st.nextToken());
+			}
 			return false;
 		}
 	}
@@ -149,11 +174,13 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		String str = ProtocolConstants.PACK_STR_SET_PRIO_HEAD;
 		str = str + " " + _server.getPrio();
 		String reply = NetComm.sendAndRecv(str, _out, _in);
-		//_dlog("sended");
 		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
-			//_dlog("confirmed");
 			return true;
 		}else{
+			StringTokenizer st = new StringTokenizer(reply);
+			if(st.nextToken().equals(ProtocolConstants.PACK_STR_ERRMES_HEAD)){
+				_elog(st.nextToken());
+			}
 			return false;
 		}
 	}
@@ -165,6 +192,10 @@ public class DropboxFileServerUserNet extends ThreadBase{
 		if(reply.equals(ProtocolConstants.PACK_STR_CONFIRM_HEAD)){
 			return true;
 		}else{
+			StringTokenizer st = new StringTokenizer(reply);
+			if(st.nextToken().equals(ProtocolConstants.PACK_STR_ERRMES_HEAD)){
+				_elog(st.nextToken());
+			}
 			return false;
 		}
 	}
@@ -188,7 +219,8 @@ public class DropboxFileServerUserNet extends ThreadBase{
 			}
 			else if(str.equals("-z")){
 				sendClose();
-				stop();
+				System.exit(0);
+				//stop();
 			}else if(str.equals("-h")){
 				usage();
 			}else if(str.equals("-d")){
@@ -216,12 +248,15 @@ public class DropboxFileServerUserNet extends ThreadBase{
 					_elog("Priority is too large");
 					return;
 				}
+				int oldPrio = _server.getPrio();
 				_server.setPrio(prio);
 				if(sendPriority() == true){
 					if(_server.debugMode())
 						_server.printStatus();
+					_log("Success");
 				}else{
-					_elog("Not confirmed, dangerous because you have changed the priority locally");
+					_elog("Not confirmed, set back to old priority");
+					_server.setPrio(oldPrio);
 				}
 			}
 			else if(tmp.equals("-r")){
@@ -230,16 +265,15 @@ public class DropboxFileServerUserNet extends ThreadBase{
 					return;
 				}
 				String name = st.nextToken();
-				if(_server.removeClient(name) == false){
-					_elog("Error in local remove");
-					// TODO: add ?
-				}else{
-					if(sendRemove(name) == true){
-						_log("Success");
-					}else{
-						_elog("Not confirmed: dangerous because you have removed locally");
+				if(sendRemove(name) == true){
+					while(_server.removeClient(name) == false){
+						Thread.sleep(200);
+						_elog("Error in local remove, retry");
 					}
-				}	
+					_log("Success");
+				}else{
+					_elog("Not confirmed by the master");
+				}
 			}
 			else if(tmp.equals("-a")){
 				if(st.countTokens() > 2){
@@ -247,18 +281,32 @@ public class DropboxFileServerUserNet extends ThreadBase{
 					return;
 				}
 				String name = st.nextToken();
+				if(name.length() > DropboxConstants.MAX_CLIENT_NAME_LEN){
+					_elog("name too long");
+					return;
+				}
 				String passWord = DropboxConstants.DEFAULT_PWD;
 				if(st.hasMoreTokens()){
 					passWord = st.nextToken();
+					if(passWord.length() > DropboxConstants.MAX_PASSWORD_NAME_LEN){
+						_elog("password too long");
+						return;
+					}
 				}
-				if(_server.addClient(name, passWord) == false){
+				if(_server.getClients().size() == _server.getMaxClientNum()){
+					_elog("No room for new clients, max is:"+_server.getMaxClientNum());
+					return;
+				}
+				if(_server.addClient(name, passWord, false) == false){
 					_elog("Error in local add");
-					// TODO: remove ?
+					
 				}else{
 					if(sendAdd(name) == true){
 						_log("Success");
 					}else{
-						_elog("Not confirmed: dangerous because you have added locally");
+						// Remove the new client then
+						_server.removeClient(name);
+						_elog("Failed");
 					}
 				}	
 			}
@@ -270,11 +318,18 @@ public class DropboxFileServerUserNet extends ThreadBase{
 				String name = st.nextToken();
 				String oldPassword = st.nextToken();
 				String password = st.nextToken();
+				if(password.length() > DropboxConstants.MAX_PASSWORD_NAME_LEN){
+					_elog("password too long");
+					return;
+				}
 				if(_server.changePassword(name, oldPassword, password)){
 					if(sendChangePassword(name, password)){
 						_log("Change password success.");
 					}else{
-						_elog("Not confiemd: dangerous because you have changed the password locally");
+						_elog("Not confiemd: set the password back to the old one");
+						if(!_server.changePassword(name, password, oldPassword)){
+							_elog("Failed, dangerous here, check the reason");
+						}
 					}
 				}
 				else{

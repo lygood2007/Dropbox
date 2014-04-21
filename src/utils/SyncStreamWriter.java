@@ -16,8 +16,21 @@ public class SyncStreamWriter {
 	private boolean _debug;
 	private DataOutputStream _os;
 	private String _home;
+	private Data
 	
-	public void writeFromFileMap(HashMap<String, DummyFile> fileMap, HashMap<String, DummyFile> prevFileMap) {
+	private void _dlog(String str){
+		if(_debug)
+			System.out.println("[SyncStreamWriter (DEBUG)]:" + str);
+	}
+	
+	private static void _elog(String str){
+		System.err.println("[SyncStreamWriter (ERROR)]:" + str);
+	}
+	
+	private static void _log(String str){
+		System.out.println("[SyncStreamWriter]:" + str);
+	}
+	public void writeFromFileMap(HashMap<String, DummyFile> fileMap, HashMap<String, DummyFile> prevFileMap) throws IOException {
 		
 		
 		HashMap<String, FileOperation> operations = new HashMap<String, FileOperation>();
@@ -64,36 +77,31 @@ public class SyncStreamWriter {
 		writeOperations(operations);
 	}
 	
-	public void writeOperations(HashMap<String, FileOperation> operations){
-		try{
-			writeHomeDirectory(_home);		
-			writeFileNum(operations.size());
-			@SuppressWarnings("rawtypes")
-			Iterator it = operations.entrySet().iterator();
-			while(it.hasNext()){
-				@SuppressWarnings("unchecked")
-				Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)(it.next());
-				String key = entry.getKey();
-				FileOperation op = entry.getValue();
-				File file = op.getDummyFile().getFile();
-				
-				writeFileName(key);
-				writeLastModifiedTime(file.lastModified());
-				writeOperation(op.getOperation());
-				writeFileFlag(op.getDummyFile().isDir());
-				if(!file.isDirectory() &&
-						(op.getOperation() == ProtocolConstants.OP_ADD ||
-						 op.getOperation() == ProtocolConstants.OP_MOD)){
-					// We need to write the file content
-					FileInputStream is = new FileInputStream(file);
-					writeFileLength(file.length());
-					writeFileContent(is);
-				}
+	public void writeOperations(HashMap<String, FileOperation> operations) throws IOException{
+
+		writeHomeDirectory(_home);		
+		writeFileNum(operations.size());
+		@SuppressWarnings("rawtypes")
+		Iterator it = operations.entrySet().iterator();
+		while(it.hasNext()){
+			@SuppressWarnings("unchecked")
+			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)(it.next());
+			String key = entry.getKey();
+			FileOperation op = entry.getValue();
+			File file = op.getDummyFile().getFile();
+
+			writeFileName(key);
+			writeLastModifiedTime(file.lastModified());
+			writeOperation(op.getOperation());
+			writeFileFlag(op.getDummyFile().isDir());
+			if(!file.isDirectory() &&
+					(op.getOperation() == ProtocolConstants.OP_ADD ||
+					op.getOperation() == ProtocolConstants.OP_MOD)){
+				// We need to write the file content
+				FileInputStream is = new FileInputStream(file);
+				writeFileLength(file.length());
+				writeFileContent(is);
 			}
-		}catch(IOException e){
-			System.err.println("Wrtie stream error");
-			if(_debug)
-				e.printStackTrace();
 		}
 	}
 
@@ -173,14 +181,7 @@ public class SyncStreamWriter {
 			_os.flush();
 		}
 	}
-	/**
-	 * Constructor
-	 */
-	public SyncStreamWriter(){
-		_debug = false;
-		_os = null;
-		_home = DropboxConstants.DROPBOX_CLIENT_ROOT;
-	}
+
 	/**
 	 * Constructor
 	 * @param debug: Debug mode?
@@ -194,5 +195,13 @@ public class SyncStreamWriter {
 	
 	public DataOutputStream getOutputStream(){
 		return _os;
+	}
+	
+	public void closeStream() throws IOException{
+		try{
+			_os.close();
+		}catch(IOException e){
+			throw e;
+		}
 	}
 }

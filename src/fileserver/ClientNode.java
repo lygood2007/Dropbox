@@ -33,6 +33,28 @@ final class ClientNode {
 		_syncers.remove(syncer);
 	}
 	
+	public synchronized void removeDeadSyncer(){
+		if(_syncers == null)
+			return;
+		Iterator it = _syncers.iterator();
+		while(it.hasNext()){
+			DropboxFileServerSyncer fss = (DropboxFileServerSyncer)it.next();
+			if(!fss.isAlive()){
+				it.remove();
+			}
+		}
+	}
+	
+	public synchronized void cancelSyncer(){
+		Iterator it = _syncers.iterator();
+		while(it.hasNext()){
+			DropboxFileServerSyncer fss = (DropboxFileServerSyncer)it.next();
+			fss.stop();
+			fss.join();
+		}
+		
+		_syncers.clear();
+	}
 	public String getClientName(){
 		return _clientName;
 	}
@@ -64,6 +86,7 @@ final class ClientNode {
 		
 		for(DropboxFileServerSyncer fss: _syncers){
 			fss.stop();
+			fss.join();
 		}
 		_syncers = null;
 		_clientName = null;
