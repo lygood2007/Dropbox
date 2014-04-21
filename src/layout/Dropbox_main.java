@@ -1,4 +1,4 @@
-package layout.main;
+package layout;
 
 import java.awt.Dimension;
 import java.awt.EventQueue;

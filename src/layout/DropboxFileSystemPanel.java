@@ -1,4 +1,4 @@
-package layout.main;
+package layout;
 
 import java.awt.Component;
 import java.awt.Container;
@@ -23,7 +23,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import layout.main.LocalFileSystemPanel.TableListener;
+import layout.LocalFileSystemPanel.TableListener;
 
 /*
  * Dropbox file system

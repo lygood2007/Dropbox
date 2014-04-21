@@ -7,4 +7,11 @@
 5. 运行client: java client/DropboxClient -name liyan -password 1,就可以和file server做sync了（name 和password必须是file server包含的）
 6. 关闭所有： 对master 按ctrl c会导致client 和file server全部断开（有重新连接的延迟）。也可以对所有程序按ctrl c
 
-注：建议把file server的所有代码全部看过
+注：
+1.建议把file server的所有代码全部看过
+2.如果运行的时候出现像下面这样的exception stack：
+java.lang.Exception: Connection is broken
+	at common.NetComm.receive(NetComm.java:27)
+	at master.MasterServerFileServerAccept.run(MasterServerFileServerAccept.java:56)
+	at java.lang.Thread.run(Thread.java:744)
+一定要把图截下来报给我！因为现在如果运行程序没有开启debug选项（没有加-d）的话是不会出现任何这样的exception stack的，出现的话说明有runtime error。
