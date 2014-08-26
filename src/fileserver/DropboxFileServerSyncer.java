@@ -28,10 +28,18 @@ class DropboxFileServerSyncer extends ThreadBase{
 			System.out.println("[DropboxFileServerSyncer (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[DropboxFileServerSyncer (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[DropboxFileServerSyncer]:" + str);
 	}

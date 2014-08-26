@@ -1,7 +1,12 @@
+/**
+ * File: ProtocolConstants.java
+ * Author: Yan Li (yan_li@brown.edu)
+ * Date: Apr 21 2014
+ */
+
 package common;
 
 /**
- * Package: common
  * Interface: ProtocolConstants
  * Description: Defines all of the constants for network protocol
  */
@@ -10,6 +15,7 @@ public interface ProtocolConstants {
 	final static byte OP_ADD = 0x01;
 	final static byte OP_DEL = 0x02;
 	final static byte OP_MOD = 0x03;
+	
 	/* Assign new number to the followings*/
 	final static int PACK_DATA_HEAD = 0x00000fff;
 	final static int PACK_QUERY_HEAD = 0x000000ff;

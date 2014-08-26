@@ -1,9 +1,6 @@
-/layout
-/master
-/utils
 /client
-/common
-/server
-/fileserver
-/UI
+/utils
 /client_layout
+/common
+/fileserver
+/master

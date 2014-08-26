@@ -1,3 +1,9 @@
+/**
+ * File: FileCommon.java
+ * Author: Yan Li (yan_li@brown.edu)
+ * Date: Apr 21 2014
+ */
+
 package common;
 
 import java.io.*;
@@ -15,6 +21,11 @@ import java.io.*;
  */
 public class FileCommon {
 	
+	/**
+	 * getParentDirStr: get parent directory from current file
+	 * @param dir: the file
+	 * @return: the parent directory in string
+	 */
 	public static String getParentDirStr(File dir){
 		if(dir.isDirectory()){
 			return new String(dir.getName().substring(0, dir.getName().lastIndexOf('/')-1));
@@ -23,6 +34,11 @@ public class FileCommon {
 		}
 	}
 	
+	/**
+	 * getParentDir: get parent directory file from file
+	 * @param file: the file
+	 * @return: the parent directory file object
+	 */
 	public static File getParentDir(File dir){
 		String fileName = getParentDirStr(dir);
 		if(fileName != null)
@@ -32,7 +48,7 @@ public class FileCommon {
 	}
 	
 	/**
-	 * Find the first existed dir, only applied in Dummy file
+	 * fineFirstExistDir: find the first existed dir, only applied in Dummy file
 	 * @param dfile: Dummy file
 	 * @return the first directory
 	 */
@@ -73,6 +89,11 @@ public class FileCommon {
 			
 	}
 	
+	/**
+	 * getPath: get path from file
+	 * @param file: the file
+	 * @return: the path in string
+	 */
 	public static String getPath(File file){
 		if(file.isDirectory())
 			return file.getAbsolutePath();
@@ -82,6 +103,11 @@ public class FileCommon {
 		}
 	}
 	
+	/**
+	 * getPath: get path from dummy file
+	 * @param dfile: the dummy file
+	 * @return: the path in string
+	 */
 	public static String getPath(DummyFile dfile){
 		if(dfile.isDir())
 			return dfile.getFile().getAbsolutePath();

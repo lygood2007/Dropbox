@@ -1,3 +1,9 @@
+/**
+ * File: DropboxFileManager.java
+ * Author: Yan Li (yan_li@brown.edu)
+ * Date: Apr 21 2014
+ */
+
 package utils;
 
 import java.io.File;
@@ -5,14 +11,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-import common.DropboxConstants;
 import common.DummyFile;
 import common.FileOperation;
 import common.ProtocolConstants;
+
 /**
  * 
- * Class: DropboxClientFileManager
- * Description: Responsible for getting file info
+ * Class: DropboxFileManager
+ * Description: Responsible for managing the files
  */
 public class DropboxFileManager {
 	
@@ -20,22 +26,38 @@ public class DropboxFileManager {
 	private String _home;
 	private HashMap<String, DummyFile> _fileMap;
 	private HashMap<String, DummyFile> _prevFileMap;
-	
 	private HashMap<String, FileOperation> _receivedFileMap;
 	
+	/**
+	 * _dlog: debug log
+	 * @param str: the log string
+	 */
 	private void _dlog(String str){
 		if(_debug)
 			System.out.println("[DropboxFileManager (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[DropboxFileManager (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[DropboxFileManager]:" + str);
 	}
 	
+	/**
+	 * showDirRecursive: show directories recursively
+	 * @param dir: the current directory
+	 * @param level: the level counter
+	 */
 	private void showDirRecursive(File dir, int level){
 		if(dir.isDirectory()){
 			File []dirContents = dir.listFiles();
@@ -54,6 +76,9 @@ public class DropboxFileManager {
 		}
 	}
 	
+	/**
+	 * showDir: show the directory
+	 */
 	public void showDir(){
 		File root = new File(_home);
 		if(!root.isDirectory())
@@ -62,6 +87,11 @@ public class DropboxFileManager {
 			showDirRecursive(root, 0);
 	}
 	
+	/**
+	 * buildFileMapRecursive: build the file map from the current directory
+	 * @param dir: the directory
+	 * @return: the file map
+	 */
 	public HashMap<String, DummyFile> buildFileMapRecursive(File dir){
 		File []files = dir.listFiles();
 		HashMap<String, DummyFile> curDirFileMap = new HashMap<String, DummyFile>();
@@ -82,6 +112,10 @@ public class DropboxFileManager {
 		}
 		return curDirFileMap;
 	}
+	
+	/**
+	 * buildFileMap: build the file map
+	 */
 	@SuppressWarnings("unchecked")
 	public void buildFileMap(){
 		
@@ -98,10 +132,17 @@ public class DropboxFileManager {
 		}
 	}
 	
+	/**
+	 * checkDiff: check the difference between the current file map and previous one
+	 * @return: true for equal, false for different
+	 */
 	public boolean checkDiff(){
 		return _prevFileMap.entrySet().equals(_fileMap.entrySet());
 	}
 	
+	/**
+	 * printFileMap: print the current file map
+	 */
 	public void printFileMap(){
 		@SuppressWarnings("rawtypes")
 		Iterator it = _fileMap.entrySet().iterator();
@@ -114,7 +155,6 @@ public class DropboxFileManager {
 		// In debug mode, we print the prev map
 		if(_debug){
 			_dlog("Prev fileMap is:");
-			//@SuppressWarnings("rawtypes")
 			it = _prevFileMap.entrySet().iterator();
 			while(it.hasNext()){
 				@SuppressWarnings("unchecked")
@@ -125,14 +165,25 @@ public class DropboxFileManager {
 		}
 	}
 	
+	/**
+	 * receiveFileMap: setter
+	 * @param rFileMap
+	 */
 	public void receiveFileMap(HashMap<String, FileOperation> rFileMap){
 		_receivedFileMap = rFileMap;
 	}
 	
+	/**
+	 * printReceivedFileMap: print the received file map
+	 */
 	public void printReceivedFileMap(){
 		printReceivedFileMap(_receivedFileMap);
 	}
 	
+	/**
+	 * printReceivedfileMap: print the received file map
+	 * @param fileMap: the file map
+	 */
 	public void printReceivedFileMap(HashMap<String, FileOperation> fileMap){
 		_dlog("The filemap we got is: ");
 		@SuppressWarnings("rawtypes")
@@ -144,54 +195,46 @@ public class DropboxFileManager {
 			String key = entry.getKey();
 			FileOperation fo = entry.getValue();
 			_log("[Entry" + i + "] " + key + " " + FileOperation.getOperationString(fo.getOperation()));
-			//byte bytes[] = fo.getBytes();
-			//if(bytes != null){
-				//_log("[FileContent]");
-				//_log(new String(bytes));
-			//}
 			i++;
 		}
 	}
 	
 
+	/**
+	 * processReceivedFileMap: process the received file map
+	 */
 	public synchronized void processReceivedFileMap() throws IOException{
 		if(_receivedFileMap != null){
 			processReceivedFileMap(_receivedFileMap);
 		}
 	}
 	
+	/**
+	 * processReceivedFileMap: process the file map got from the connection.
+	 * @param fileMap: the file map
+	 */
+	@SuppressWarnings("unchecked")
 	private synchronized void processReceivedFileMap(HashMap<String, FileOperation> fileMap) throws IOException{
-		// Firstly deal with directory
-		//try{
 		@SuppressWarnings("rawtypes")
 		Iterator it = fileMap.entrySet().iterator();
 		while(it.hasNext()){
-			@SuppressWarnings("unchecked")
 			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
-			String key = entry.getKey();
 			FileOperation fo = entry.getValue();
 			File file = fo.getDummyFile().getFile();
 			if(fo.getDummyFile().isDir()){
 				if(fo.getOperation() == ProtocolConstants.OP_ADD
 					&&!file.exists()){
 					file.mkdirs();
-					// This will cause exception if remove
-					//fileMap.remove(key);
 				}
 				else if(fo.getOperation() == ProtocolConstants.OP_DEL && file.exists()){
 					deleteSubDirs(file);
-					// This will cause exception if remove
-				//	fileMap.remove(key);
 				}
 			}
 		}
 		
-		// Then deal with file
 		it = fileMap.entrySet().iterator();
 		while(it.hasNext()){
-			@SuppressWarnings("unchecked")
 			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
-			String key = entry.getKey();
 			FileOperation fo = entry.getValue();
 			File file = fo.getDummyFile().getFile();
 			if(!fo.getDummyFile().isDir()){
@@ -205,12 +248,8 @@ public class DropboxFileManager {
 
 						FileOutputStream fs = new FileOutputStream(file);
 						fs.write(bytes);
+						fs.close();
 					}
-					/*catch(IOException e){
-						_elog("Error occurs when wrtie file");
-						if(_debug)
-							e.printStackTrace();
-					}*/
 				}else if(fo.getOperation() == ProtocolConstants.OP_DEL){
 					if(file.exists())
 						file.delete();
@@ -228,6 +267,10 @@ public class DropboxFileManager {
 		}
 	}
 	
+	/**
+	 * deleteSubDirs: recursively delete sub-directories
+	 * @param file: the current directory
+	 */
 	public void deleteSubDirs(File file){
 		if(file.isDirectory()){
 			File[] list = file.listFiles();
@@ -240,6 +283,11 @@ public class DropboxFileManager {
 		}
 	}
 	
+	/**
+	 * getRelativeRootPath: get the relative path from file object
+	 * @param file: the file
+	 * @return: the path
+	 */
 	public String getRelativeRootPath(File file){
 		return file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(_home)+_home.length());
 	}
@@ -247,6 +295,7 @@ public class DropboxFileManager {
 	/**
 	 * Constructor
 	 * @param home: The home directory
+	 * @param debug: debug mode?
 	 */
 	public DropboxFileManager(String home, boolean debug){
 		_debug = debug;

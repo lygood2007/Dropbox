@@ -1,7 +1,12 @@
+/**
+ * File: DummyFile.java
+ * Author: Yan Li (yan_li@brown.edu)
+ * Date: Apr 21 2014
+ */
+
 package common;
 
 import java.io.*;
-
 /**
  * 
  * Class: DummyFile
@@ -15,22 +20,36 @@ public class DummyFile {
 	private File _file;
 	private long _lastModifiedTime;
 	
+	/**
+	 * Default constructor
+	 */
 	public DummyFile(){
 		_isDir = false;
 		_file = null;
 		_lastModifiedTime = 0;
 	}
 	
+	/**
+	 * Constructor
+	 * @param isDir: is directory or not
+	 * @param file: is file or not
+	 */
 	public DummyFile(boolean isDir, File file){
 		_isDir = isDir;
 		_file = file;
 		_lastModifiedTime = 0;
 	}
 	
+	/**
+	 *  Setters
+	 */
 	public void setLastModifiedTime(long lastModifiedTime){
 		_lastModifiedTime = lastModifiedTime;
 	}
 	
+	/**
+	 *  Getters
+	 */
 	public long getLastModifiedTime(){
 		return _lastModifiedTime;
 	}
@@ -43,6 +62,9 @@ public class DummyFile {
 		return _isDir;
 	}
 	
+	/**
+	 * Custom equals
+	 */
 	public boolean equals(Object o){
 		DummyFile d = (DummyFile)o;
 		if(d._isDir == _isDir &&

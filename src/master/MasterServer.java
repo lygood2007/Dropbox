@@ -28,10 +28,19 @@ final class MasterServer {
 			System.out.println("[MasterServer (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
+	@SuppressWarnings("unused")
 	private static void _elog(String str){
 		System.err.println("[MasterServer (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[MasterServer]:" + str);
 	}

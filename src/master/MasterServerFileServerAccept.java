@@ -24,10 +24,18 @@ class MasterServerFileServerAccept extends ThreadBase{
 			System.out.println("[MasterServerFileServerAccept (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[MasterServerFileServerAccept (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[MasterServerFileServerAccept]:" + str);
 	}

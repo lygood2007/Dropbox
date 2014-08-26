@@ -1,3 +1,10 @@
+/**
+ * File: DropboxClientNet.java
+ * Author: Yan Li (yan_li@brown.edu)
+ * Date: Apr 21 2014
+ */
+
+
 package client;
 
 import java.io.*;
@@ -9,25 +16,45 @@ import common.ProtocolConstants;
 /**
  * Class: DropboxClientNet
  * Description: Deal with the network connecting issues
+ *              such as open connections, close connections, etc
  */
 public class DropboxClientNet {
 
-	private Socket _sock;
-	private DropboxClient _client;
+	private Socket _sock; // The socket 
+	private DropboxClient _client; // The client object
 	
+	/**
+	 * _dlog: debug log
+	 * @param str: the log string
+	 */
+	@SuppressWarnings("unused")
 	private void _dlog(String str){
 		if(_client.debugMode())
 			System.out.println("[DropboxClientNet (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private void _elog(String str){
 		System.err.println("[DropboxClientNet (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[DropboxClientNet]:" + str);
 	}
 	
+	/**
+	 * openConnections: open the connection to the address given in the arguments
+	 * @param IP: the IP address
+	 * @param port: the port number
+	 * @return: succeed or not
+	 */
 	public boolean openConnections(String IP, int port){
 		_log("Try to connect to " + IP + ":" + port + "...");
 		
@@ -63,6 +90,10 @@ public class DropboxClientNet {
 		return false;
 	}
 	
+	/**
+	 * identify: identify the file server. will read the address information from file server
+	 * @return: the ip address of file server
+	 */
 	public String identify(){
 		try{
 			DataInputStream in = new DataInputStream(_sock.getInputStream());
@@ -106,8 +137,12 @@ public class DropboxClientNet {
 		}
 		return null;
 	}
+	
 	/**
-	 * Connect: connect the socket to server
+	 * connect: connect to the server
+	 * @param IP: the IP address
+	 * @param port: the port number
+	 * @return: succeed or not
 	 */
 	public boolean connect(String IP, int port){
 		try{
@@ -132,6 +167,9 @@ public class DropboxClientNet {
 		return false;
 	}
 
+	/**
+	 * closeConnections: the wrapper. close the connection using retry mechanism
+	 */
 	public void closeConnection(){
 		_log("Close the connection...");
 		int i = 0;
@@ -147,6 +185,10 @@ public class DropboxClientNet {
 		_elog("Failed");
 	}
 	
+	/**
+	 * close: close the connection. the operation on socket
+	 * @return: succeed or not
+	 */
 	public boolean close(){
 		if(_sock != null){
 			try{

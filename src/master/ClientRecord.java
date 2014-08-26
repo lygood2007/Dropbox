@@ -17,7 +17,7 @@ final class ClientRecord {
 		_serverNode = serverNode;
 	}
 	
-	/*
+	/**
 	 * Getters
 	 */
 	public String getName(){

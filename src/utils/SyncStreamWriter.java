@@ -1,14 +1,19 @@
+/**
+ * File: SyncStreamWriter.java
+ * Author: Yan Li (yan_li@brown.edu)
+ * Date: Apr 21 2014
+ */
+
 package utils;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
 
 import common.*;
 
 /**
  *
- * Class: DropboxClientStreamWriter
+ * Class: SyncStreamWriter
  * Description: Responsible for writing data into stream
  */
 public class SyncStreamWriter {
@@ -17,18 +22,39 @@ public class SyncStreamWriter {
 	private DataOutputStream _os;
 	private String _home;
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
+	@SuppressWarnings("unused")
 	private void _dlog(String str){
 		if(_debug)
 			System.out.println("[SyncStreamWriter (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
+	@SuppressWarnings("unused")
 	private static void _elog(String str){
 		System.err.println("[SyncStreamWriter (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
+	@SuppressWarnings("unused")
 	private static void _log(String str){
 		System.out.println("[SyncStreamWriter]:" + str);
 	}
+	
+	/**
+	 * writeFromFileMap: write into the output stream from file map
+	 * @param fileMap: the current file map
+	 * @param prevFileMap: the previous file map
+	 */
 	public void writeFromFileMap(HashMap<String, DummyFile> fileMap, HashMap<String, DummyFile> prevFileMap) throws IOException {
 		
 		
@@ -76,6 +102,10 @@ public class SyncStreamWriter {
 		writeOperations(operations);
 	}
 	
+	/**
+	 * writeOperations: write the operations into stream
+	 * @param operations: the operations
+	 */
 	public void writeOperations(HashMap<String, FileOperation> operations) throws IOException{
 
 		writeHomeDirectory(_home);		
@@ -104,6 +134,9 @@ public class SyncStreamWriter {
 		}
 	}
 
+	/**
+	 * Writers
+	 */
 	public void writeFileNum (int size) throws IOException {
 		if(_os != null){
 			_os.writeInt(size);
@@ -183,8 +216,9 @@ public class SyncStreamWriter {
 
 	/**
 	 * Constructor
-	 * @param debug: Debug mode?
-	 * @param sock: Socket
+	 * @param home: the home directory
+	 * @param os: the output stream
+	 * @param debug: debug mode?
 	 */
 	public SyncStreamWriter(String home, DataOutputStream os, boolean debug){
 		_home = home;
@@ -192,10 +226,16 @@ public class SyncStreamWriter {
 		_os = os;
 	}
 	
+	/**
+	 * Getters
+	 */
 	public DataOutputStream getOutputStream(){
 		return _os;
 	}
 	
+	/**
+	 * closeStream: close the stream
+	 */
 	public void closeStream() throws IOException{
 		try{
 			_os.close();

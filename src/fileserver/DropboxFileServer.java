@@ -1,7 +1,6 @@
 package fileserver;
 
 import common.*;
-
 import java.io.*;
 import java.util.*;
 
@@ -27,16 +26,24 @@ final class DropboxFileServer {
 	               // The larger it is the higher it will be chosen to be the sync server
 	private int _maxClientNum;
 	private Map<String, ClientNode> _clients;
-	/*private boolean _clientsDirty;*/
+	
 	private void _dlog(String str){
 		if(_debug)
 			System.out.println("[DropboxFileServer (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[DropboxFileServer (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[DropboxFileServer]:" + str);
 	}

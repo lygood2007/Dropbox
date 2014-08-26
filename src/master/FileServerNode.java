@@ -11,17 +11,13 @@ import java.util.*;
  */
 final class FileServerNode {
 	
-	/* immutable */
 	private Socket _userSocket;
 	private Socket _socket;
 	private String _ip;	
 	private int _id;
-	//private int _port;
-	/* mutable, can be changed, no need to be volatile because they are 
-	 * changed in synchronized block */
+
 	private int _prio;
 	private int _maxClients;
-	//private Map<String, String> _mp;
 	private boolean _alive;
 	private MasterServerFileServerAccept _fsaNet;
 	private MasterServerFileServerRequest _fsqNet;
@@ -91,14 +87,6 @@ final class FileServerNode {
 	public boolean isAlive(){
 		return _alive;
 	}
-	
-	/*public Map<String, String> getMap(){
-		return _mp;
-	}
-	
-	public synchronized void clearMap(){
-		_mp.clear();
-	}*/
 	
 	public synchronized void clearClients(){
 		_clients.clear();

@@ -34,10 +34,18 @@ class DropboxFileServerMasterNet {
 			System.out.println("[DropboxFileServerMasterNet (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[DropboxFileServerMasterNet (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[DropboxFileServerMasterNet]:" + str);
 	}

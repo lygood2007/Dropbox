@@ -19,10 +19,18 @@ class DropboxFileServerClientNet extends GeneralServer{
 			System.out.println("[DropboxFileServerClientNet (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[DropboxFileServerClientNet (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[DropboxFileServerClientNet]:" + str);
 	}

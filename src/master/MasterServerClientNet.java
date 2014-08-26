@@ -19,10 +19,18 @@ class MasterServerClientNet extends GeneralServer{
 			System.out.println("[MasterServerClientsNet (DEBUG)]:" + str);
 	}
 	
+	/**
+	 * _elog: error log
+	 * @param str: the log string
+	 */
 	private static void _elog(String str){
 		System.err.println("[MasterServerClientsNet (ERROR)]:" + str);
 	}
 	
+	/**
+	 * _log: general log
+	 * @param str: the log string
+	 */
 	private static void _log(String str){
 		System.out.println("[MasterServerClientsNet]:" + str);
 	}
