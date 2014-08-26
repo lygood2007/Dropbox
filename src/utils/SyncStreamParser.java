@@ -32,7 +32,7 @@ public class SyncStreamParser {
 	 * @param str: the log string
 	 */
 	private void _dlog(String str){
-		if(_debug)
+		if (_debug)
 			System.out.println("[SyncStreamParser (DEBUG)]:" + str);
 	}
 	
@@ -73,7 +73,7 @@ public class SyncStreamParser {
 	 * @return: the parsed file map
 	 */
 	public HashMap<String, FileOperation> parseFileMap() throws IOException{
-		if(_is != null){
+		if (_is != null){
 			String targetHome = null;
 			try{
 				int tarLength = _is.readInt();
@@ -89,6 +89,7 @@ public class SyncStreamParser {
 			}catch(IOException e){
 				throw e;
 			}
+			
 			int fileNum = 0;
 			try{
 				// Valid stream			
@@ -101,7 +102,8 @@ public class SyncStreamParser {
 			try
 			{
 				// The hashmap is used for storing the structure
-				HashMap<String, FileOperation> fileMap = new HashMap<String, FileOperation>();
+				HashMap<String, FileOperation> fileMap =
+						new HashMap<String, FileOperation>();
 
 				for( int i = 0; i < fileNum; i++ ){
 					// Read each file
@@ -121,8 +123,9 @@ public class SyncStreamParser {
 	 * @param is: the input stream
 	 * @param fileMap: the file map
 	 */
-	public void readEach(DataInputStream is, HashMap<String, FileOperation> fileMap) throws IOException {
-		if(is != null){
+	public void readEach(DataInputStream is,
+					HashMap<String, FileOperation> fileMap) throws IOException {
+		if (is != null){
 			int nameLength = is.readInt();
 			_dlog("Name length: " + nameLength);
 			
@@ -144,7 +147,7 @@ public class SyncStreamParser {
 			long fileLength = 0;
 			byte []fileBytes = null;
 			
-			if(flag == false &&
+			if (flag == false &&
 					(operation == ProtocolConstants.OP_ADD ||
 					operation == ProtocolConstants.OP_MOD)){
 				fileLength = is.readLong();
@@ -155,9 +158,9 @@ public class SyncStreamParser {
 				 * REVISE THIS LATER
 				 */
 				fileBytes = new byte[(int)fileLength];
-				//is.read(fileBytes);
+
 				int i = 0;
-				while(i < fileLength){
+				while (i < fileLength){
 					fileBytes[i] = is.readByte();
 					i++;
 				}
@@ -165,8 +168,10 @@ public class SyncStreamParser {
 			}
 				// Print the data we get
 			_dlog("Filename: "+fileName + "(" + flag +")"
-						+ " Operation: " + operation + " LastTime: " + lastModifiedTime);
-			if(fileBytes != null && _debug){
+						+ " Operation: " + operation +
+						" LastTime: " + lastModifiedTime
+						);
+			if (fileBytes != null && _debug){
 				String fileContent = new String(fileBytes);
 				_dlog(fileContent);
 			}
@@ -178,7 +183,7 @@ public class SyncStreamParser {
 	 * @return: the head integer
 	 */
 	public int parseHead() throws IOException {
-		if(_is != null)
+		if (_is != null)
 			return _is.readInt();
 		else
 			return ProtocolConstants.PACK_INVALID_HEAD;

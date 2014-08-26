@@ -27,8 +27,9 @@ public class FileCommon {
 	 * @return: the parent directory in string
 	 */
 	public static String getParentDirStr(File dir){
-		if(dir.isDirectory()){
-			return new String(dir.getName().substring(0, dir.getName().lastIndexOf('/')-1));
+		if (dir.isDirectory()){
+			return new String(dir.getName().substring(0,
+							  dir.getName().lastIndexOf('/')-1));
 		}else{
 			return null;
 		}
@@ -41,7 +42,7 @@ public class FileCommon {
 	 */
 	public static File getParentDir(File dir){
 		String fileName = getParentDirStr(dir);
-		if(fileName != null)
+		if (fileName != null)
 			return new File(fileName);
 		else
 			return null;
@@ -56,31 +57,31 @@ public class FileCommon {
 		String absPath;
 		absPath = getPath(dfile);
 		
-		if(absPath == null)
+		if (absPath == null)
 			return null;
 		
 		String[] split = absPath.split("/");
-		if(split.length == 0)
+		if (split.length == 0)
 			return new File("/");
 		
 		String lastPath = new String("");
 		File nextPath = null;
 		int i = 0;
-		while(i < split.length){
+		while (i < split.length){
 			String nextPathStr = lastPath + "/" + split[i];
 			nextPath = new File(nextPathStr);
-			if(!nextPath.exists())
+			if (!nextPath.exists())
 				break;
 			else
 				lastPath = nextPath.getAbsolutePath();
 			i++;
 		}
-		if(nextPath != null)
+		if (nextPath != null)
 		{
-			if(nextPath.exists()){
+			if (nextPath.exists()){
 				return nextPath;
 			}
-			else if(!nextPath.exists())
+			else if (!nextPath.exists())
 				return new File(lastPath);
 			else
 				return null;
@@ -95,7 +96,7 @@ public class FileCommon {
 	 * @return: the path in string
 	 */
 	public static String getPath(File file){
-		if(file.isDirectory())
+		if (file.isDirectory())
 			return file.getAbsolutePath();
 		else{
 			String path = file.getAbsolutePath();
@@ -109,7 +110,7 @@ public class FileCommon {
 	 * @return: the path in string
 	 */
 	public static String getPath(DummyFile dfile){
-		if(dfile.isDir())
+		if (dfile.isDir())
 			return dfile.getFile().getAbsolutePath();
 		else{
 			String path = dfile.getFile().getAbsolutePath();

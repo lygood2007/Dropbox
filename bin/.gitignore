@@ -1,6 +1,4 @@
 /client
-/utils
 /client_layout
 /common
-/fileserver
-/master
+/utils

@@ -24,7 +24,7 @@ public abstract class GeneralServer extends ThreadBase{
 	 * @param str: the log string
 	 */
 	private void _dlog(String str){
-		if(_debug)
+		if (_debug)
 			System.out.println("[GeneralServer (DEBUG)]:" + str);
 	}
 	
@@ -53,20 +53,20 @@ public abstract class GeneralServer extends ThreadBase{
 	 */
 	@Override
 	public void stop(){
-		if(_suspended == true){
+		if (_suspended == true){
 			_elog("Cannot stop when suspending");
 			return;
 		}
 		_t = null;
 		/* Interrupt socket */
-		if(_serverSocket != null){
+		if (_serverSocket != null){
 			try{
 				_serverSocket.close();
 			}catch(IOException e){
-				if(!_noException){
+				if (!_noException){
 					_elog(e.toString());
 				}
-				if(_debug){
+				if (_debug){
 					e.printStackTrace();
 				}
 			}
@@ -79,15 +79,15 @@ public abstract class GeneralServer extends ThreadBase{
 	protected void clear(){
 		_dlog("Do clear...");
 		try{
-			if(_serverSocket != null){
+			if (_serverSocket != null){
 				_serverSocket.close();
 			}
 			_serverSocket = null;
 		}catch(IOException e){
-			if(!_noException){
+			if (!_noException){
 				_elog(e.toString());
 			}
-			if(_debug){
+			if (_debug){
 				e.printStackTrace();
 			}
 		}

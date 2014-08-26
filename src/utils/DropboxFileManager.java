@@ -33,7 +33,7 @@ public class DropboxFileManager {
 	 * @param str: the log string
 	 */
 	private void _dlog(String str){
-		if(_debug)
+		if (_debug)
 			System.out.println("[DropboxFileManager (DEBUG)]:" + str);
 	}
 	
@@ -59,13 +59,13 @@ public class DropboxFileManager {
 	 * @param level: the level counter
 	 */
 	private void showDirRecursive(File dir, int level){
-		if(dir.isDirectory()){
+		if (dir.isDirectory()){
 			File []dirContents = dir.listFiles();
 			for( int i = 0; i < dirContents.length; i++ ){
 				for( int j= 0; j < level; j++ )
 					System.out.print(' ');
 				
-				if(dirContents[i].isDirectory()){
+				if (dirContents[i].isDirectory()){
 					_log(dirContents[i].getName() + "(Dir)");
 					showDirRecursive(dirContents[i],level+1);
 				}
@@ -81,7 +81,7 @@ public class DropboxFileManager {
 	 */
 	public void showDir(){
 		File root = new File(_home);
-		if(!root.isDirectory())
+		if (!root.isDirectory())
 			_elog("Your home dir is invalid");
 		else
 			showDirRecursive(root, 0);
@@ -94,14 +94,15 @@ public class DropboxFileManager {
 	 */
 	public HashMap<String, DummyFile> buildFileMapRecursive(File dir){
 		File []files = dir.listFiles();
-		HashMap<String, DummyFile> curDirFileMap = new HashMap<String, DummyFile>();
-		if(!dir.getPath().equals(_home)){
+		HashMap<String, DummyFile> curDirFileMap =
+				new HashMap<String, DummyFile>();
+		if (!dir.getPath().equals(_home)){
 			DummyFile df = new DummyFile(dir.isDirectory(), dir);
 			df.setLastModifiedTime(dir.lastModified());
 			curDirFileMap.put(getRelativeRootPath(dir), df);
 		}
 		for( int i = 0; i < files.length; i++ ){
-			if(files[i].isDirectory()){
+			if (files[i].isDirectory()){
 				curDirFileMap.putAll(buildFileMapRecursive(files[i]));				
 			}
 			else{
@@ -120,11 +121,11 @@ public class DropboxFileManager {
 	public void buildFileMap(){
 		
 		File root = new File(_home);
-		if(!root.isDirectory() || !root.exists())
+		if (!root.isDirectory() || !root.exists())
 			_elog("Your home dir is invalid");
 		else{
 			
-			if(_fileMap != null)
+			if (_fileMap != null)
 			{
 				_prevFileMap = (HashMap<String, DummyFile>)(_fileMap.clone());
 			}
@@ -133,7 +134,7 @@ public class DropboxFileManager {
 	}
 	
 	/**
-	 * checkDiff: check the difference between the current file map and previous one
+	 * checkDiff: check the difference between the current and previous one
 	 * @return: true for equal, false for different
 	 */
 	public boolean checkDiff(){
@@ -146,19 +147,21 @@ public class DropboxFileManager {
 	public void printFileMap(){
 		@SuppressWarnings("rawtypes")
 		Iterator it = _fileMap.entrySet().iterator();
-		while(it.hasNext()){
+		while (it.hasNext()){
 			@SuppressWarnings("unchecked")
-			Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)it.next();
+			Map.Entry<String, DummyFile> entry = 
+			(Map.Entry<String, DummyFile>)it.next();
 			String fileName = entry.getKey();
 			_log(fileName);
 		}
 		// In debug mode, we print the prev map
-		if(_debug){
+		if (_debug){
 			_dlog("Prev fileMap is:");
 			it = _prevFileMap.entrySet().iterator();
-			while(it.hasNext()){
+			while (it.hasNext()){
 				@SuppressWarnings("unchecked")
-				Map.Entry<String, DummyFile> entry = (Map.Entry<String, DummyFile>)it.next();
+				Map.Entry<String, DummyFile> entry =
+				(Map.Entry<String, DummyFile>)it.next();
 				String fileName = entry.getKey();
 				_dlog(fileName);
 			}
@@ -189,12 +192,14 @@ public class DropboxFileManager {
 		@SuppressWarnings("rawtypes")
 		Iterator it = fileMap.entrySet().iterator();
 		int i = 0;
-		while(it.hasNext()){
+		while (it.hasNext()){
 			@SuppressWarnings("unchecked")
-			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
+			Map.Entry<String, FileOperation> entry =
+			(Map.Entry<String, FileOperation>)it.next();
 			String key = entry.getKey();
 			FileOperation fo = entry.getValue();
-			_log("[Entry" + i + "] " + key + " " + FileOperation.getOperationString(fo.getOperation()));
+			_log("[Entry" + i + "] " + key + " " +
+				 FileOperation.getOperationString(fo.getOperation()));
 			i++;
 		}
 	}
@@ -204,7 +209,7 @@ public class DropboxFileManager {
 	 * processReceivedFileMap: process the received file map
 	 */
 	public synchronized void processReceivedFileMap() throws IOException{
-		if(_receivedFileMap != null){
+		if (_receivedFileMap != null){
 			processReceivedFileMap(_receivedFileMap);
 		}
 	}
@@ -214,44 +219,48 @@ public class DropboxFileManager {
 	 * @param fileMap: the file map
 	 */
 	@SuppressWarnings("unchecked")
-	private synchronized void processReceivedFileMap(HashMap<String, FileOperation> fileMap) throws IOException{
+	private synchronized void processReceivedFileMap(
+					HashMap<String, FileOperation> fileMap) throws IOException{
 		@SuppressWarnings("rawtypes")
 		Iterator it = fileMap.entrySet().iterator();
-		while(it.hasNext()){
-			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
+		while (it.hasNext()){
+			Map.Entry<String, FileOperation> entry = 
+					(Map.Entry<String, FileOperation>)it.next();
 			FileOperation fo = entry.getValue();
 			File file = fo.getDummyFile().getFile();
-			if(fo.getDummyFile().isDir()){
-				if(fo.getOperation() == ProtocolConstants.OP_ADD
+			if (fo.getDummyFile().isDir()){
+				if (fo.getOperation() == ProtocolConstants.OP_ADD
 					&&!file.exists()){
 					file.mkdirs();
 				}
-				else if(fo.getOperation() == ProtocolConstants.OP_DEL && file.exists()){
+				else if (fo.getOperation() == ProtocolConstants.OP_DEL &&
+						file.exists()){
 					deleteSubDirs(file);
 				}
 			}
 		}
 		
 		it = fileMap.entrySet().iterator();
-		while(it.hasNext()){
-			Map.Entry<String, FileOperation> entry = (Map.Entry<String, FileOperation>)it.next();
+		while (it.hasNext()){
+			Map.Entry<String, FileOperation> entry =
+					(Map.Entry<String, FileOperation>)it.next();
 			FileOperation fo = entry.getValue();
 			File file = fo.getDummyFile().getFile();
-			if(!fo.getDummyFile().isDir()){
-				if(fo.getOperation() == ProtocolConstants.OP_ADD ||
+			if (!fo.getDummyFile().isDir()){
+				if (fo.getOperation() == ProtocolConstants.OP_ADD ||
 						fo.getOperation() == ProtocolConstants.OP_MOD){
 
-					if(!file.exists())		
+					if (!file.exists())		
 						file.createNewFile();
 					byte bytes[] = fo.getBytes();
-					if(bytes != null){
+					if (bytes != null){
 
 						FileOutputStream fs = new FileOutputStream(file);
 						fs.write(bytes);
 						fs.close();
 					}
-				}else if(fo.getOperation() == ProtocolConstants.OP_DEL){
-					if(file.exists())
+				}else if (fo.getOperation() == ProtocolConstants.OP_DEL){
+					if (file.exists())
 						file.delete();
 				}
 			}
@@ -259,7 +268,7 @@ public class DropboxFileManager {
 		
 		// We need to rebuild the map and clone the current one into prev map
 		File root = new File(_home);
-		if(!root.isDirectory() || !root.exists())
+		if (!root.isDirectory() || !root.exists())
 			_elog("Your home dir is invalid");
 		else{
 			_fileMap = buildFileMapRecursive(root);
@@ -272,10 +281,10 @@ public class DropboxFileManager {
 	 * @param file: the current directory
 	 */
 	public void deleteSubDirs(File file){
-		if(file.isDirectory()){
+		if (file.isDirectory()){
 			File[] list = file.listFiles();
 			for(File f:list){
-				if(f.isDirectory())
+				if (f.isDirectory())
 					deleteSubDirs(f);
 				f.delete();
 			}
@@ -289,7 +298,9 @@ public class DropboxFileManager {
 	 * @return: the path
 	 */
 	public String getRelativeRootPath(File file){
-		return file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(_home)+_home.length());
+		return file.getAbsolutePath().substring(
+			   file.getAbsolutePath().indexOf(_home)+_home.length()
+			   );
 	}
 	
 	/**

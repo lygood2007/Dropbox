@@ -24,7 +24,7 @@ abstract public class ThreadBase implements Runnable{
 	 * @param str: the log string
 	 */
 	private void _dlog(String str){
-		if(_debug)
+		if (_debug)
 			System.out.println("[ThreadBase (DEBUG)]:" + str);
 	}
 	
@@ -65,7 +65,7 @@ abstract public class ThreadBase implements Runnable{
 	 * stop: stop the thread
 	 */
     public void stop(){
-    	if(_suspended == true){
+    	if (_suspended == true){
     		_elog("Cannot stop when suspending");
     		return;
     	}
@@ -88,7 +88,7 @@ abstract public class ThreadBase implements Runnable{
      * join: join the thread
      */
 	public void join(){
-		if(_t == null){
+		if (_t == null){
 			return;
 		}else
 		{

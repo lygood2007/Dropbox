@@ -67,7 +67,7 @@ public class DummyFile {
 	 */
 	public boolean equals(Object o){
 		DummyFile d = (DummyFile)o;
-		if(d._isDir == _isDir &&
+		if (d._isDir == _isDir &&
 				d._lastModifiedTime == _lastModifiedTime &&
 				d._file.getName().equals(_file.getName())){
 			return true;

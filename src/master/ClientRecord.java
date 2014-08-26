@@ -32,6 +32,7 @@ final class ClientRecord {
 		return _serverNode;
 	}
 	
+	
 	public boolean isMatch(String name, String password){
 		return _name.equals(name) && _password.equals(password);
 	}

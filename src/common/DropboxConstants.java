@@ -23,11 +23,19 @@ public interface DropboxConstants {
     final static int MAX_TRY = 3; // Max number of tries for connection
     final static String MASTER_IP = "127.0.0.1";// Hard coded, cannot be changed
     
-    final static int MASTER_CLUSTER_PORT = 8080; // Default master port for receiving cluster connection
-    final static int MASTER_CLIENT_PORT = 8086; // Default master port for receiving client connection
+     // Default master port for receiving cluster connection
+    final static int MASTER_CLUSTER_PORT = 8080;
+     // Default master port for receiving client connection
+    final static int MASTER_CLIENT_PORT = 8086;
     
-    final static String FILE_SERVER_ROOT = System.getProperty("user.dir") + System.getProperty("file.separator") + "server_root"; // Default server_root directory
-    final static String CLIENT_ROOT = System.getProperty("user.dir") + System.getProperty("file.separator") + "client_root"; // Default client_root directory
+    // Default server_root directory
+    final static String FILE_SERVER_ROOT = System.getProperty("user.dir") +
+    		 							   System.getProperty("file.separator") +
+    		 							   "server_root";
+    // Default client_root directory
+    final static String CLIENT_ROOT = System.getProperty("user.dir") +
+    								  System.getProperty("file.separator") + 
+    								  "client_root";
     
     final static int MAX_PRIO = 5; // Max priority
     final static int MIN_PRIO = 1; // Min priority

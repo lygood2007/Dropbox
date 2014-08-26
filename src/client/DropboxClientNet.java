@@ -29,7 +29,7 @@ public class DropboxClientNet {
 	 */
 	@SuppressWarnings("unused")
 	private void _dlog(String str){
-		if(_client.debugMode())
+		if (_client.debugMode())
 			System.out.println("[DropboxClientNet (DEBUG)]:" + str);
 	}
 	
@@ -59,12 +59,12 @@ public class DropboxClientNet {
 		_log("Try to connect to " + IP + ":" + port + "...");
 		
 		int i = 0;
-		while(true){
+		while (true){
 			boolean isConnected = connect(IP, port);
 
-			if(!isConnected){
+			if (!isConnected){
 				i++;
-				if(i == DropboxConstants.MAX_TRY){
+				if (i == DropboxConstants.MAX_TRY){
 					break;
 				}
 				_log("Cannot connect to Master, retry " + i);
@@ -72,10 +72,10 @@ public class DropboxClientNet {
 				try{
 					Thread.sleep(DropboxConstants.TRY_CONNECT_MILLIS);
 				}catch(InterruptedException e){
-					if(!_client.noException()){
+					if (!_client.noException()){
 						_elog(e.toString());
 					}
-					if(_client.debugMode()){
+					if (_client.debugMode()){
 						e.printStackTrace();
 					}
 					_log("Retry connection is interrupted");
@@ -105,21 +105,21 @@ public class DropboxClientNet {
 			out.writeChar('\n');
 			
 			int pack_head = in.readInt();
-			if(pack_head != ProtocolConstants.PACK_FS_INFO_HEAD){
+			if (pack_head != ProtocolConstants.PACK_FS_INFO_HEAD){
 				return null;
 			}
 			int i = 0;
 			/* read IP*/
 			String ip = "";
 			int IP_LENGTH = 4*3+3;
-			while(i < IP_LENGTH){
+			while (i < IP_LENGTH){
 				char c = in.readChar();
-				if(c == '\n'){
+				if (c == '\n'){
 					break;
 				}else{	
 					ip = ip + c;
 					i++;
-					if(i > IP_LENGTH){
+					if (i > IP_LENGTH){
 						return null;
 					}
 				}
@@ -128,10 +128,10 @@ public class DropboxClientNet {
 			return ip;
 		}
 		catch(IOException e){
-			if(!_client.noException()){
+			if (!_client.noException()){
 				_elog(e.toString());
 			}
-			if(_client.debugMode()){
+			if (_client.debugMode()){
 				e.printStackTrace();
 			}
 		}
@@ -150,17 +150,17 @@ public class DropboxClientNet {
 			_log("Successful connection to " + IP + ":" + port);
 			return true;
 		}catch(UnknownHostException e){
-			if(!_client.noException()){
+			if (!_client.noException()){
 				_elog(e.toString());
 			}
-			if(_client.debugMode()){
+			if (_client.debugMode()){
 				e.printStackTrace();
 			}
 		}catch(IOException e){
-			if(!_client.noException()){
+			if (!_client.noException()){
 				_elog(e.toString());
 			}
-			if(_client.debugMode()){
+			if (_client.debugMode()){
 				e.printStackTrace();
 			}
 		}
@@ -173,8 +173,8 @@ public class DropboxClientNet {
 	public void closeConnection(){
 		_log("Close the connection...");
 		int i = 0;
-		while(i < DropboxConstants.MAX_TRY){
-			if(close()){
+		while (i < DropboxConstants.MAX_TRY){
+			if (close()){
 				_log("Success");
 				return;
 			}else{
@@ -190,17 +190,17 @@ public class DropboxClientNet {
 	 * @return: succeed or not
 	 */
 	public boolean close(){
-		if(_sock != null){
+		if (_sock != null){
 			try{
 				_sock.close();
 				_log("Closed connection to " + _client.getMasterIP() + ":" + _client.getMasterPort());
 				_sock = null;
 				return true;
 			}catch(IOException e){
-				if(!_client.noException()){
+				if (!_client.noException()){
 					_elog(e.toString());
 				}
-				if(_client.debugMode()){
+				if (_client.debugMode()){
 					e.printStackTrace();
 				}
 				return false;

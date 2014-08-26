@@ -14,7 +14,8 @@ import utils.*;
 
 /**
  * Class: DropboxClient
- * Description: The client side wrapper, responsible for everything in the client side
+ * Description: The client side wrapper,
+ *              responsible for everything in the client side
  */
 public class DropboxClient {
 
@@ -97,7 +98,8 @@ public class DropboxClient {
 				_elog("Aborting");
 				return;
 			}else{
-				_log("Delay the identification for " + DropboxConstants.IDENTIFY_DELAY + " milliseconds");
+				_log("Delay the identification for " +
+					 DropboxConstants.IDENTIFY_DELAY + " milliseconds");
 				try{
 					Thread.sleep(DropboxConstants.IDENTIFY_DELAY);
 				}catch (InterruptedException e){
@@ -122,30 +124,42 @@ public class DropboxClient {
 						return;
 					}
 
-					// We got the conection, send the identification to file server
+					// We got a connection
 					_log("Send verification message to file server");
+					
 					try{
-						DataOutputStream out = new DataOutputStream(_net.getSocket().getOutputStream());
-						DataInputStream in = new DataInputStream(_net.getSocket().getInputStream());
+						
+						DataOutputStream out = new DataOutputStream(
+											   _net.getSocket().getOutputStream()
+											   );
+						DataInputStream in = new DataInputStream(
+								             _net.getSocket().getInputStream()
+								             );
 						out.writeInt(ProtocolConstants.PACK_INIT_HEAD);
 						out.writeChars(_name);
 						out.writeChar('\n');
 						out.writeChars(_password);
 						out.writeChar('\n');
 						int reply = in.readInt();
+						
 						if (reply == ProtocolConstants.PACK_CONFIRM_HEAD){
 							_log("User account confirmed!");
 							prepareSync();
 						}else if (reply == ProtocolConstants.PACK_FULL_HEAD){
-							_elog("One terminal is already using"); // Not applicable now
+							_elog("One terminal is already using");
 							return;
 						}else if (reply == ProtocolConstants.PACK_FAIL_HEAD){
-							_elog("Your combination of name and password is not correct");
+							_elog("Your combination of name and password is"
+									+ "wrong"
+								  );
 							return;
 						}
 						while (!_net.getSocket().isClosed()){
 							sync();
-							_dlog("sync suspended (resume after " + DropboxConstants.SYNC_SLEEP_MILLIS + ")");
+							
+							_dlog("sync suspended (resume after " +
+								  DropboxConstants.SYNC_SLEEP_MILLIS + ")");
+							
 							Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
 						}
 					}
@@ -167,7 +181,7 @@ public class DropboxClient {
 					}
 					finally{
 						closeConnection();
-						_elog("The connection to file server is broken, retry connection to master");
+						_elog("The connection is broken, retry...");
 					}
 				}
 			}
@@ -175,11 +189,20 @@ public class DropboxClient {
 	}
 
 	/**
-	 * prepareSync: prepare the synchronization (send a query head and then sleep)
+	 * prepareSync: prepare the synchronization
+	 * 			    (send a query head and then sleep)
 	 */
     private void prepareSync() throws IOException, InterruptedException{
-    	_sw = new SyncStreamWriter(_fm.getHome(),new DataOutputStream(_net.getSocket().getOutputStream()),_debug);
-		_sp = new SyncStreamParser(_fm.getHome(),new DataInputStream(_net.getSocket().getInputStream()),_debug);
+    	_sw = new SyncStreamWriter(_fm.getHome(),
+    							   new DataOutputStream(
+    							   _net.getSocket().getOutputStream()),
+    							   _debug
+    							   );
+		_sp = new SyncStreamParser(_fm.getHome(),
+								   new DataInputStream(
+								    _net.getSocket().getInputStream()),
+								    _debug
+								    );
 		_sw.writePackageHeader(ProtocolConstants.PACK_QUERY_HEAD);
 		Thread.sleep(DropboxConstants.SYNC_SLEEP_MILLIS);
     }
@@ -191,7 +214,8 @@ public class DropboxClient {
     private void sync() throws IOException {
     	
     	// Sync once
-    	// Firstly read to see if there is file map from server, if yes, then we sync from server
+    	// Firstly read to see if there is file map from server
+    	// If yes, then we sync from server
     	int packHead = _sp.parse();
 		if (packHead == ProtocolConstants.PACK_DATA_HEAD){
 			_dlog("I got data stream, now syncing");
@@ -373,7 +397,11 @@ public class DropboxClient {
      * @param name: the name of the client?
      * @param password: the password of the client?
      */
-    public DropboxClient(boolean debug, boolean useUI, boolean hideException, String name, String password){
+    public DropboxClient(boolean debug, 
+    				     boolean useUI,
+    				     boolean hideException,
+    				     String name,
+    				     String password){
     	_debug = debug;
     	_hideException = hideException;
     	_name = name;
@@ -417,7 +445,11 @@ public class DropboxClient {
     		System.exit(1);
     	}
     	
-    	DropboxClient client = new DropboxClient(debug, useUI, hideException, name, password);
+    	DropboxClient client = new DropboxClient(debug,
+    											 useUI,
+    											 hideException, 
+    											 name, 
+    											 password);
     	client.run();
     }
 }
